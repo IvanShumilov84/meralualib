@@ -71,11 +71,10 @@ do  -- Функция конвертации реал в бул.
         local bool_value = real_to_bool(real_value)
     ]]
     function real_to_bool(real_value)
-        local bool_value = false
-        if real_value > 0 then
-            bool_value = true
-        end
-        return bool_value
+        assert(bool_value ~= nil , "bool_value is nil ")
+        assert(type(bool_value) ~= "string", "bool_value is string ")
+
+        return real_value > 0
     end
     lib["real_to_bool"] = real_to_bool
 end
@@ -88,11 +87,9 @@ do  -- Функция конвертации бул в реал.
         local real_value = bool_to_real(bool_value)
     ]]
     function bool_to_real(bool_value)
-        local real_value = 0
-        if bool_value then
-            real_value = 1
-        end
-        return real_value
+        assert(bool_value ~= nil , "bool_value is nil ")
+        assert(type(bool_value) ~= "string", "bool_value is string ")
+        return bool_value and 1 or 0
     end
     lib["bool_to_real"] = bool_to_real
 end
