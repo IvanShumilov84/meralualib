@@ -6,15 +6,15 @@
 convertfunc = {}
 
 
-do  -- Функция конвертации реал в бул.
+do  -- Функция конвертации real в bool.
   --[[
       Пример вызова:
       local real_to_bool = lib["real_to_bool"]
       local bool_value = real_to_bool(real_value)
   ]]
   function real_to_bool(real_value)
-      assert(bool_value ~= nil , "bool_value is nil ")
-      assert(type(bool_value) ~= "string", "bool_value is string ")
+      assert(real_value ~= nil , "real_value is nil ")
+      assert(type(real_value) ~= "string", "real_value is string ")
 
       return real_value > 0
   end
@@ -22,7 +22,7 @@ do  -- Функция конвертации реал в бул.
 end
 
 
-do  -- Функция конвертации бул в реал.
+do  -- Функция конвертации bool в real.
   --[[
       Пример вызова:
       local bool_to_real = lib["bool_to_real"]
