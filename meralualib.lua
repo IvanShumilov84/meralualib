@@ -56,19 +56,24 @@ do  -- Класс Таймер TON.
             end
             private.input_last = self.enable
 
-            self.et = 0
-            if self.enable then
+
+            if self.enable and not self.q then
                 self.et = cur_time - private.start_time
                 if self.et < 0 then
                     private.start_time = (-1) * private.et_last
                     self.et = cur_time - private.start_time
                 end
                 private.et_last = self.et
+            elseif not self.enable then
+                self.et = 0
+                private.et_last = 0
             end
 
-            self.q = false
-            if self.et >= self.pt then
+
+            if self.enable and self.et >= self.pt then
                 self.q = true
+            elseif not self.enable then
+                self.q = false
             end
             return self.q
         end

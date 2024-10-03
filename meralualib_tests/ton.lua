@@ -24,13 +24,13 @@ local bool_to_real = tbl_ConvLib["bool_to_real"]
 	function lua_main()
 		--  Работа с ton_1.
 		ton_1:calc()
-		ton_1.input = real_to_bool(getValue("__meralualibtests_ton__ton_1.input"))
+		ton_1.enable = real_to_bool(getValue("__meralualibtests_ton__ton_1.input"))
 		setValue("__meralualibtests_ton__ton_1.q", bool_to_real(ton_1.q))
 		setValue("__meralualibtests_ton__ton_1.et", ton_1.et)
 
 		--  Работа с ton_2.
 		ton_2:calc()
-		ton_2.input = real_to_bool(getValue("__meralualibtests_ton__ton_2.input"))
+		ton_2.enable = real_to_bool(getValue("__meralualibtests_ton__ton_2.input"))
 		setValue("__meralualibtests_ton__ton_2.q", bool_to_real(ton_2.q))
 		setValue("__meralualibtests_ton__ton_2.et", ton_2.et)
 	end
