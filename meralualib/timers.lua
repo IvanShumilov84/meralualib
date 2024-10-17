@@ -70,7 +70,7 @@ do
 
             if self.enable and not self.q then
                 self.et = cur_time - private.start_time
-                if self.et < 0 then
+                if self.et < private.et_last then
                     private.start_time = (-1) * private.et_last
                     self.et = cur_time - private.start_time
                 end
