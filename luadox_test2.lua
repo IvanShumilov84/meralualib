@@ -1,8 +1,18 @@
-local t = {}
+--- Блок специальных функций.
+--
+-- @module spec
 
+local spec = {}
 
-do  --- Р¤СѓРЅРєС†РёСЏ РєСѓСЃРѕС‡РЅРѕ-Р»РёРЅРµР№РЅРѕР№ РёРЅС‚РµСЂРїРѕР»СЏС†РёРё РґР»СЏ РѕРґРЅРѕРіРѕ Р°СЂРіСѓРјРµРЅС‚Р°.
-    function t.piecewise(x, x_arr, y_arr)
+--- Функция кусочно-линейной интерполяции для одного аргумента.
+-- @class piecewise
+do
+--- API.
+-- @tparam real x аргумент функции, известный параметр.
+-- @tparam table[real] x_arr одномерный массив граничных значений аргумента.
+-- @tparam table[real] y_arr одномерный массив граничных значений функции.
+-- @treturn real искомое значение кусочно-линейной функции.
+    function spec.piecewise(x, x_arr, y_arr)
         assert(#x_arr >= 2, "The dimension of the array 'x_arr' is less than 2 ")
         assert(#y_arr >= 2, "The dimension of the array 'y_arr' is less than 2 ")
         assert(#x_arr == #y_arr, "The dimensions of the arrays 'x_arr' and 'y_arr' are different ")
@@ -27,12 +37,17 @@ do  --- Р¤СѓРЅРєС†РёСЏ РєСѓСЃРѕС‡РЅРѕ-Р»РёРЅРµР№РЅРѕР№ РёРЅС‚РµСЂРїРѕР»СЏС†РёРё 
 
         return (x - x_arr[i1]) / (x_arr[i2] - x_arr[i1]) * (y_arr[i2] - y_arr[i1]) + y_arr[i1]
     end
+--- @example
+--   f = xyz.File('/etc/passwd')
+--   f.seek(xyz.File.SEEK_END)
 end
 
 
-do  --- Р¤СѓРЅРєС†РёСЏ РєСѓСЃРѕС‡РЅРѕ-Р»РёРЅРµР№РЅРѕР№ РёРЅС‚РµСЂРїРѕР»СЏС†РёРё РґР»СЏ РґРІСѓС… Р°СЂРіСѓРјРµРЅС‚РѕРІ.
-    function t.piecewise2(x, y, x_arr, y_arr, z_arr)
-        local piecewise = t.piecewise
+--- Функция кусочно-линейной интерполяции для двух аргументов.
+-- @class piecewise2
+do
+    function spec.piecewise2(x, y, x_arr, y_arr, z_arr)
+        local piecewise = spec.piecewise
         assert(#x_arr >= 2, "The dimension of the array 'x_arr' is less than 2 ")
         assert(#y_arr >= 2, "The dimension of the array 'y_arr' is less than 2 ")
         assert(#y_arr == #z_arr, "The dimensions of the arrays 'y_arr' and 'z_arr' are different ")
@@ -71,4 +86,4 @@ do  --- Р¤СѓРЅРєС†РёСЏ РєСѓСЃРѕС‡РЅРѕ-Р»РёРЅРµР№РЅРѕР№ РёРЅС‚РµСЂРїРѕР»СЏС†РёРё 
     end
 end
 
-return t
+return spec
