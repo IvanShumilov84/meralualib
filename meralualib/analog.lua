@@ -13,7 +13,6 @@ do -- Класс триггер изменения аналогового зна
 
         -- Публичные свойства.
         local obj = {
-            value = 0, --  [вход] Значение для детектирования его изменения.
             step = 0, --  [вход] Шаг изменения значения.
             q = false, --  [выход] Состояние изменения значения.
             qu = false, --  [выход] Состояние увеличения значения.
@@ -30,20 +29,19 @@ do -- Класс триггер изменения аналогового зна
         function obj:upd(value, step)
             -- Контроллер.
             assert(
-                value == nil or type(value) == "number",
+                type(value) == "number",
                 "Argument 'value': expected 'number', got '" .. type(value) .. "'. "
             )
             assert(
                 step == nil or type(step) == "number",
                 "Argument 'step': expected 'number', got '" .. type(step) .. "'. "
             )
-            self.value = value or self.value
             self.step = step or self.step
-            private.diff = self.value - private.value_last
+            private.diff = value - private.value_last
             self.q = math.abs(private.diff) > self.step
-            self.qu = self.value > private.value_last and math.abs(private.diff) > self.step
-            self.qd = self.value < private.value_last and math.abs(private.diff) > self.step
-            private.value_last = self.value
+            self.qu = value > private.value_last and self.q
+            self.qd = value < private.value_last and self.q
+            private.value_last = value
             return self.q, self.qu, self.qd
         end
 
