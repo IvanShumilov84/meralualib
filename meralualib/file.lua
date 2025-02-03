@@ -1,6 +1,6 @@
 --[[
 -- Модуль работы с файлами.
-]]
+--]]
 
 local t = {}
 
@@ -47,35 +47,35 @@ do --  Функция чтения файла.
                     f:close()
                     break
                 end
-                    line = split(line, delim)
-                    local array = {}
-                    for i = 1, #line do
-                        array[i] = trim(line[i])
-                    end
-                    if coll_type == "dict" then
-                        if array[1] == "" then
-                            ;
-                        else
-                            if #array == 1 then
-                                data[array[1]] = ""
-                            elseif #array == 2 then
-                                data[array[1]] = array[2]
-                            else
-                                local tbl = {}
-                                for i = 2, #array do
-                                    table.insert(tbl, array[i])
-                                end
-                                data[array[1]] = tbl
-                            end
-                        end
-                    end
-                    if coll_type == "list" then
+                line = split(line, delim)
+                local array = {}
+                for i = 1, #line do
+                    array[i] = trim(line[i])
+                end
+                if coll_type == "dict" then
+                    if array[1] == "" then
+                        ;
+                    else
                         if #array == 1 then
-                            table.insert(data, array[1])
+                            data[array[1]] = ""
+                        elseif #array == 2 then
+                            data[array[1]] = array[2]
                         else
-                            table.insert(data, array)
+                            local tbl = {}
+                            for i = 2, #array do
+                                table.insert(tbl, array[i])
+                            end
+                            data[array[1]] = tbl
                         end
                     end
+                end
+                if coll_type == "list" then
+                    if #array == 1 then
+                        table.insert(data, array[1])
+                    else
+                        table.insert(data, array)
+                    end
+                end
             end
         else
             err = 1
