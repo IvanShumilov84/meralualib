@@ -7,11 +7,13 @@ local t = {}
 
 do --  Функция поиска ключа по значению в словаре.
     ---@param dict table
-    ---@param value any
-    ---@param default any
-    ---@return any
+    ---@param value number
+    ---@param default string
+    ---@return string
     function t.dict_find_key(dict, value, default)
         assert(type(dict) == "table", "Parameter 'dict': expected 'table', got '" .. type(dict) .. "'. ")
+        assert(type(value) == "number", "Parameter 'value': expected 'number', got '" .. type(value) .. "'. ")
+        assert(type(default) == "string", "Parameter 'default': expected 'string', got '" .. type(default) .. "'. ")
         local key
         key = default or key
         for k, v in pairs(dict) do

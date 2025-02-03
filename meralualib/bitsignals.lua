@@ -4,7 +4,7 @@
 -- @module bitsignals
 
 --
-local lib = {}
+local t = {}
 
 
 
@@ -12,20 +12,20 @@ do  -- Класс триггер R-TRIG.
   --[[ 
       Реализация классического триггера R-TRIG (детектор переднего фронта).
       Пример вызова:
-      r_trig_1 = lib["RTrig"]:new()   -- Создать экземпляр триггера (метод вызывается один раз).
+      r_trig_1 = t.RTrig:new()   -- Создать экземпляр триггера (метод вызывается один раз).
       r_trig_1.clk = some_clk         -- Обработка появления переднего фронта на канале some_clk.
-      r_trig_1:calc()                 -- Вызов работы триггера в цикле программы.
+      r_trig_1:upd()                 -- Вызов работы триггера в цикле программы.
       some_event = r_trig_1.q         -- На канале some_event появится true на время одного цилка программы
                                        при появлении переднего фронта на канале some_clk.
 
       Пример 2
-      r_trig_1:calc(some_clk)                 -- Вызов триггера с одновременной передачей канала для отслеживания фронта.
-      some_event = r_trig_1:calc(some_clk)    -- На канале some_event появится true на время одного цилка программы
+      r_trig_1:upd(some_clk)                 -- Вызов триггера с одновременной передачей канала для отслеживания фронта.
+      some_event = r_trig_1:upd(some_clk)    -- На канале some_event появится true на время одного цилка программы
                                               при появлении переднего фронта на канале some_clk.
-  ]]  
-  RTrig = {}
+  ]]
+  t.RTrig = {}
   -- Тело класса.
-  function RTrig:new()
+  function t.RTrig:new()
 
       -- Свойства.
       local obj = {}
@@ -36,8 +36,8 @@ do  -- Класс триггер R-TRIG.
       obj.q = false           -- Выход триггера.
 
       -- Методы.
-      function obj:calc(clk)  -- Контроллер триггера.
-          self.clk = clk or self.clk
+      function obj:upd(clk)  -- Контроллер триггера.
+          self.clk = clk == nil and self.clk or clk
           self.q = false
           if self.clk and not private.clk_last then
               self.q = true
@@ -50,7 +50,6 @@ do  -- Класс триггер R-TRIG.
       self.__index = self
       return obj
   end
-  lib["RTrig"] = RTrig
 end
 
 
@@ -60,9 +59,9 @@ do  -- Класс триггер F-TRIG.
       Пример вывзова:
 
   ]]
-  FTrig = {}
+  t.FTrig = {}
   -- Тело класса.
-  function FTrig:new()
+  function t.FTrig:new()
 
       -- Свойства.
       local obj = {}
@@ -73,8 +72,8 @@ do  -- Класс триггер F-TRIG.
       obj.q = false           -- Выход триггера.
 
       -- Методы.
-      function obj:calc(clk)  -- Контроллер триггера.
-          self.clk = clk or self.clk
+      function obj:upd(clk)  -- Контроллер триггера.
+          self.clk = clk == nil and self.clk or clk
           self.q = false
           if not self.clk and private.clk_last then
               self.q = true
@@ -87,8 +86,7 @@ do  -- Класс триггер F-TRIG.
       self.__index = self
       return obj
   end
-  lib["FTrig"] = FTrig
 end
 
 
-return lib
+return t
