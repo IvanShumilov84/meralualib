@@ -1,9 +1,12 @@
 --[[
     Менетжер тревог.
 ]]
+--
+
 def_pth = require("_script_path")
 pth = def_pth.script_path("..\\meralualib")
 def_pth.lib_path(pth)
+
 
 Abs = require("Abs")
 
@@ -101,7 +104,7 @@ function t.Amanager:new()
     }
 
     -- Циклическое обновление менеджера тревог.
-        function obj:upd(alarms)
+    function obj:upd(alarms)
 
         if not init_upd then
             init_upd = true
@@ -123,9 +126,5 @@ function t.Amanager:new()
     self.__index = self
     return obj
 end
-
-al_1 = t.Amanager:new()
-al_2 = t.Amanager:new()
-print(al_1)
 
 return t

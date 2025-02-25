@@ -45,5 +45,4 @@ do --  Получить текущее состояние ПО Recorder
     end
 end
 
-
 return t

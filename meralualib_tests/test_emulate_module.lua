@@ -7,18 +7,18 @@ def_pth = require("_script_path")
 pth = def_pth.script_path("..\\meralualib")
 def_pth.lib_path(pth)
 
-dbg = require("emulate")
-for k, v in pairs(dbg) do
+emlulate = require("emulate")
+for k, v in pairs(emlulate) do
   print(k, v)
 end
 
-print(dbg.getValue)
-dbg.getValue("test_string")
-dbg.getValue("test_string", 10)
+print(emlulate.getValue)
+emlulate.getValue("test_string")
+emlulate.getValue("test_string", 10)
 
-print(dbg.setValue)
-dbg.setValue("test_string", 10)
+print(emlulate.setValue)
+emlulate.setValue("test_string", 10)
 
-print(dbg.getRecorderStatus)
-dbg.getRecorderStatus()
-dbg.getRecorderStatus(100)
+print(emlulate.getRecorderStatus)
+emlulate.getRecorderStatus()
+emlulate.getRecorderStatus(100)

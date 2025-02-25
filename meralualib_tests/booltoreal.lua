@@ -8,7 +8,6 @@ local bool_to_real = lib["bool_to_real"]
 
 -- setValue("__meralualibtests_booltoreal__set_bool_true")
 
-
 -- Главная функция скрипта, вызвается с заданной периодичностью
 function lua_main()
     local set_bool_true = getValue("__meralualibtests_booltoreal__set_bool_true")
