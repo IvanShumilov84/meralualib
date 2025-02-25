@@ -7,7 +7,7 @@ def_pth.lib_path(pth .. "\\..\\meralualib")
 tg = require("tags")
 
 
-T_ = tg:new()
+--T_ = tg:new() -- 
 
 s = {
   {name = "a1 Параметр двигателя", ["defval"] = 100},
@@ -15,5 +15,6 @@ s = {
   {name = "Канал СИАМ", ["defval"] = 1234}
 }
 
-T_:CreateNewTags(s)
+--T_:CreateNewTags(s) -- 
 
+tg:CreateNewTags(s)

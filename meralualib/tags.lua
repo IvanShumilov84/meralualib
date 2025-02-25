@@ -5,15 +5,15 @@ local pth = def_pth.script_path()
 def_pth.lib_path(pth .. "\\..\\meralualib")
 
 
-Abs = require("Abs")
-f = require("file")
+local Abs = require("Abs")
+local f = require("file")
 
 local Tags = {}
 Tags.alloc_ = Abs:alloc_{maxinst = 1}
 
 function Tags:new()
 
-  local tg = {}
+  local tg = self.alloc_()
   tg.tags = {}
 
   --- Функция создает теги на основе переданной таблицы имен и инициализирующих значений
@@ -53,6 +53,6 @@ function Tags:new()
   return tg
 end
 
-
+Tags = Tags:new()
 return Tags
 
