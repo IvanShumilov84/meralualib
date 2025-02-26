@@ -1,6 +1,6 @@
 --[[
 -- Модуль работы с файлами.
---]]
+]]
 
 local t = {}
 
@@ -47,35 +47,35 @@ do --  Функция чтения файла.
                     f:close()
                     break
                 end
-                line = split(line, delim)
-                local array = {}
-                for i = 1, #line do
-                    array[i] = trim(line[i])
-                end
-                if coll_type == "dict" then
-                    if array[1] == "" then
-                        ;
-                    else
-                        if #array == 1 then
-                            data[array[1]] = ""
-                        elseif #array == 2 then
-                            data[array[1]] = array[2]
+                    line = split(line, delim)
+                    local array = {}
+                    for i = 1, #line do
+                        array[i] = trim(line[i])
+                    end
+                    if coll_type == "dict" then
+                        if array[1] == "" then
+                            ;
                         else
-                            local tbl = {}
-                            for i = 2, #array do
-                                table.insert(tbl, array[i])
+                            if #array == 1 then
+                                data[array[1]] = ""
+                            elseif #array == 2 then
+                                data[array[1]] = array[2]
+                            else
+                                local tbl = {}
+                                for i = 2, #array do
+                                    table.insert(tbl, array[i])
+                                end
+                                data[array[1]] = tbl
                             end
-                            data[array[1]] = tbl
                         end
                     end
-                end
-                if coll_type == "list" then
-                    if #array == 1 then
-                        table.insert(data, array[1])
-                    else
-                        table.insert(data, array)
+                    if coll_type == "list" then
+                        if #array == 1 then
+                            table.insert(data, array[1])
+                        else
+                            table.insert(data, array)
+                        end
                     end
-                end
             end
         else
             err = 1
@@ -92,7 +92,7 @@ do --  Функция записи в файл.
     ---@param delim string|nil
     ---@param keys table|nil
     ---@return number
-    function t.wfile(fpath_name, data, coll_type, delim, keys)
+    function t.wfile(fpath_name, data, coll_type, delim, keys, write_mode)
         assert(type(fpath_name) == "string", "Parameter 'fpath_name': expected 'string', got '" .. type(fpath_name) .. "'. ")
         assert(type(data) == "table", "Parameter 'data': expected 'table', got '" .. type(data) .. "'. ")
         assert(
@@ -111,9 +111,23 @@ do --  Функция записи в файл.
             keys == nil or type(keys) == "table",
             "Parameter 'keys': expected 'table', got '" .. type(keys) .. "'. "
         )
+        assert(
+            write_mode == nil or type(write_mode) == "string",
+            "Parameter 'write_mode': expected 'string', got '" .. type(write_mode) .. "'. "
+        )
+        write_mode = write_mode or "w+"
+        local WRITE_MODES = {"w", "a", "r+", "w+", "a+", "wb", "ab"}
+        local write_mode_assert = false
+        for _, wmode in ipairs(WRITE_MODES) do
+            if write_mode == wmode then
+                write_mode_assert = true
+                break
+            end
+        end
+        assert(write_mode_assert, "The file recording modes can only be of the following types: 'w', 'a', 'r+', 'w+', 'a+', 'wb', 'ab'")
         delim = delim or ""
         local err = 1
-        local f = io.open(fpath_name, "w+")
+        local f = io.open(fpath_name, write_mode)
         if f then
             if coll_type == "dict" then
                 if keys then
