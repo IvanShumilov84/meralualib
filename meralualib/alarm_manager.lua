@@ -1,23 +1,31 @@
 --[[
     Менетжер тревог.
 ]]
---
+
+
+local M = {}
+
 
 def_pth = require("_script_path")
 pth = def_pth.script_path("..\\meralualib")
 def_pth.lib_path(pth)
 
-
 Abs = require("Abs")
 
-local t = {}
+local datatype = require("meralualib\\datatype")
+local CH_NOT_READY = datatype.CH_NOT_READY
+local CH_STATUS = datatype.CH_STATUS
+local DATAST = datatype.DATAST
+local SIAM_LOG_CAT = datatype.SIAM_LOG_CAT
+local SIAM_LOG_PRIOR = datatype.SIAM_LOG_PRIOR
+local UNKNOWN = datatype.UNKNOWN
 
 
-t.Amanager = {}  -- Класс Менеджер тревог (singleton).
-t.Amanager.alloc_ = Abs:alloc_{maxinst = 1}
+M.Amanager = {}  -- Класс Менеджер тревог (singleton).
+M.Amanager.alloc_ = Abs:alloc_{maxinst = 1}
 
 -- Создать экземпляр менеджера тревог.
-function t.Amanager:new()
+function M.Amanager:new()
 
     local init_upd = false  -- Флаг инициализации.
     local active_alarms = {}  -- Список активных аварийных сообщений.
@@ -48,23 +56,23 @@ function t.Amanager:new()
     })
 
     -- Установить сообщение.
-    local function set_ack_msg(text_id, text_msg, msgid, tableid, event, msg_color)
+    local function set_ack_msg(text_id, text_msg, msgid, tableid, event, msg_color, log_prior)
             if event and (not active_alarms[msgid] or unack_alarms[msgid]) then
                 Delete_Alarm(msgid)
                 active_alarms[msgid] = true
                 unack_alarms[msgid] = false
                 new_msg_color[msgid] = 1
+                U_Alarm2(text_id  .. text_msg, msgid, tableid, MSG_COLORS[msg_color][new_msg_color[msgid]], log_prior)
             end
             if event and new_msg_color[msgid] < #MSG_COLORS[msg_color] then
                 new_msg_color[msgid] = new_msg_color[msgid] + 1
-                Delete_Alarm(msgid)
-                U_Alarm(text_id  .. text_msg, msgid, tableid, MSG_COLORS[msg_color][new_msg_color[msgid]])
+                U_Alarm2_Change(text_id  .. text_msg, msgid, tableid, MSG_COLORS[msg_color][new_msg_color[msgid]], log_prior)
             end
 
             if not event and active_alarms[msgid] then
                 Delete_Alarm(msgid)
                 local text = text_id  .. "[Неактивна] " .. text_msg
-                U_Alarm(text, msgid, tableid, MSG_COLOR_UNACK)
+                U_Alarm2(text, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY)
                 active_alarms[msgid] = false
                 unack_alarms[msgid] = true
             end
@@ -76,17 +84,17 @@ function t.Amanager:new()
 
     -- Установить аварийное сообщение.
     local function set_alarm_ack_msg(text_id, text_msg, msgid, tableid, event)
-        set_ack_msg(text_id, text_msg, msgid, tableid, event, "MSG_COLOR_ALARM")
+        set_ack_msg(text_id, text_msg, msgid, tableid, event, "MSG_COLOR_ALARM", SIAM_LOG_PRIOR.ERROR)
     end
 
     -- Установить предупредительное сообщение.
     local function set_warn_ack_msg(text_id, text_msg, msgid, tableid, event)
-        set_ack_msg(text_id, text_msg, msgid, tableid, event, "MSG_COLOR_WARN")
+        set_ack_msg(text_id, text_msg, msgid, tableid, event, "MSG_COLOR_WARN", SIAM_LOG_PRIOR.WARNING)
     end
 
     -- Установить информационное сообщение.
     local function set_info_ack_msg(text_id, text_msg, msgid, tableid, event)
-        set_ack_msg(text_id, text_msg, msgid, tableid, event, "MSG_COLOR_INFO")
+        set_ack_msg(text_id, text_msg, msgid, tableid, event, "MSG_COLOR_INFO", SIAM_LOG_PRIOR.INFO)
     end
 
     -- Очистить все сообщения перед стартом работы менеджера тревог.
@@ -127,4 +135,5 @@ function t.Amanager:new()
     return obj
 end
 
-return t
+
+return M
