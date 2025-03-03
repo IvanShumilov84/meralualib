@@ -61,7 +61,6 @@ function Abs:alloc_(arg)
     if check_ then
       inst = inst or tinst
       inst[i_] = tinst
-      print('inst = ', check_, 'i = ', i_, inst, inst[i_])
       return inst[i_]
     else
       if retinst then
