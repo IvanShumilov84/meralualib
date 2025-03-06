@@ -2,7 +2,24 @@
 -- Модуль обработки элементов графического интерфейса мнемосхем.
 --]]
 
-local t = {}
+local M = {}
+
+
+local tags = require("meralualib\\tags")
+
+
+-- Создание каналов к элементу мнемосхемы.
+---@param elem_name string Имя элемента мнемосхемы.
+---@param items {suffix...: string} Суффиксы к именам каналов.
+local function create_tags(elem_name, items)
+    local ttag = {}
+    for _, item in ipairs(items) do
+        local tag = {}
+        tag.name = elem_name .. "." .. item
+        table.insert(ttag, tag)
+    end
+    tags:CreateNewTags(ttag)
+end
 
 
 do --  Класс Кнопка-кликер.
@@ -21,6 +38,8 @@ do --  Класс Кнопка-кликер.
         local private = {
             cmd_last = false -- Предыдущее значение события.
         }
+
+        create_tags(name, {"cmd", "unlock", "q"})
 
         -- Публичные методы.
         function obj:upd(cmd)
@@ -52,7 +71,7 @@ do --  Класс Кнопка-кликер.
         self.__index = self
         return obj
     end
-    t["Btn_click"] = Btn_click
+    M["Btn_click"] = Btn_click
 end
 
 
@@ -72,6 +91,8 @@ do --  Класс Кнопка-переключатель.
         local private = {
             cmd_last = false -- Предыдущее значение события.
         }
+
+        create_tags(name, {"cmd", "unlock", "q"})
 
         -- Публичные методы.
         function obj:upd(cmd)
@@ -105,7 +126,7 @@ do --  Класс Кнопка-переключатель.
         self.__index = self
         return obj
     end
-    t["Btn_toggle"] = Btn_toggle
+    M["Btn_toggle"] = Btn_toggle
 end
 
 
@@ -125,6 +146,8 @@ do --  Класс Выпадающий список.
         local private = {
             index_last = 0 -- Предыдущий индекс.
         }
+
+        create_tags(name, {"index", "unlock"})
 
         -- Публичные методы.
         function obj:upd(index)
@@ -174,7 +197,7 @@ do --  Класс Выпадающий список.
         self.__index = self
         return obj
     end
-    t["Combobox"] = Combobox
+    M["Combobox"] = Combobox
 end
 
-return t
+return M
