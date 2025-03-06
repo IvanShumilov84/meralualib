@@ -17,6 +17,7 @@ function Tags:new()
   tg.tags = {}
 
   local current_env = "SIAMGLB" -- глобальное пространство имен по умолчанию
+  local init_ = false -- флаг начальной инициализации 
 
   --- Функция создает теги на основе переданной таблицы имен и инициализирующих значений
   ---@param ttags {name: string, defval: number} -- таблица имен тегов и инициализирующих значений
@@ -31,7 +32,8 @@ function Tags:new()
     -- Теги для которых значение по умолчанию не задано инициализируются нулем.
     -- Если путь к файлу не задан, то путь сохранения специального файла либо в директориии вызова функции, либо зависит от цепочки вызовов.
     --]]
-
+    assert (type(ttags) == "table", "Assert in function InitTags, the input parameter must be a table")
+    local strings_tname = {}
     option = option or {}
     assert(type(option) == "table")
     local env = option.env or current_env -- пространство имен
@@ -41,11 +43,11 @@ function Tags:new()
     local pth_dir = option.pth_dir
     pth_dir = pth_dir ~= nil and type(pth_dir) == "string" and pth_dir or pth .."\\..\\"
     pth_dir = pth_dir .. "__CREATE_NEWTAGS__.lua"
-    local f = io.open(pth_dir, "r")
 
-    assert (type(ttags) == "table", "Assert in function InitTags, the input parameter must be a table")
-
-    local strings_tname = {}
+    local f = nil
+    if init_ then
+      f = io.open(pth_dir, "r")
+    end
     if f then 
       while true do
         local str_ = f:read()
@@ -56,6 +58,7 @@ function Tags:new()
       end
       f:close()
     else
+
       table.insert(strings_tname, '--Скрипт создан автоматически, не изменять вручную')
       table.insert(strings_tname, 'function lua_main() end')      
     end
@@ -72,6 +75,7 @@ function Tags:new()
       f:write(v, "\n")
     end
     f:close()
+    init_ = true
   end
 
   --- устанавливает текущее пространство имен

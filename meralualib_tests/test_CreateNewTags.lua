@@ -30,3 +30,6 @@ s2 = {
 }
 
 tg:CreateNewTags(s2, {addsiam = true, pth_dir = pth})
+--tg:CreateNewTags(s2, {addsiam = true, pth_dir = pth})
+--tg:CreateNewTags(s2, {addsiam = true, pth_dir = pth})
+--tg:CreateNewTags(s2, {addsiam = true, pth_dir = pth})
