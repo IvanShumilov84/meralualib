@@ -23,6 +23,38 @@ local function script_path (pth)
   return (str:match("(.*[/\\])") or ".\\") .. pth
 end
 
+local str_path = ''
+
+local function register_script_path()
+  local SCR_NAME = "_script_path.lua"
+  local spth = script_path(SCR_NAME)
+  local path = package.path
+  local regs_ = path:match("[^;][^;]+[^;]")
+  assert(regs_ ~= nil, "Error, the target path not found")
+  regs_ = regs_:match(".+[^%?%.lua]") .. SCR_NAME
+
+  f = io.open(spth, "r")
+  local tb = {}
+  if f then 
+    while true do
+      local str_ = f:read()
+      if str_ == nil then 
+        break 
+      end
+      table.insert(tb, str_)
+    end
+    f:close()  
+  end
+  f = io.open(regs_, "w")
+  if f then
+    for k in ipairs(tb) do
+      f:write(tb[k], "\n")
+    end
+  end
+  f:close()
+end
+register_script_path()
+
 return {
   ["script_path"] = script_path,
 
@@ -34,6 +66,7 @@ return {
     pth = type(pth) == "string" and pth or ""
     srs = type(srs) == "string" and srs or "\\?.lua;"
     package.path = pth .. srs .. package.path
+    str_path = pth .. srs
   end,
 
   --- Функция добавляет путь к откомпилированному файлу или пакету в системной переменной
@@ -44,6 +77,10 @@ return {
     pth = type(pth) == "string" and pth or ""
     srs = type(srs) == "string" and srs or "\\?.dll;"
     package.cpath = pth .. srs .. package.cpath
+    str_path = pth .. srs
   end,
 
+  ["get_path"] = function ()
+    return str_path
+  end
 }

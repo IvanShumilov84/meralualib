@@ -128,7 +128,7 @@ do --  Класс Выпадающий список.
 
         -- Публичные методы.
         function obj:upd(index)
-             -- Контроллер.
+            -- Контроллер.
             assert(index == nil or type(index) == "number", private:msg_index_number(index))
             assert(name == nil or type(name) == "string", private:msg_name_string(name))
             assert(name == nil or name ~= "", private:msg_name_empty(name))
