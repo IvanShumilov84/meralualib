@@ -21,7 +21,7 @@ s = {
   ----@param option {env: string, unique: boolean, addsiam: boolean, pth_dir: string} -- дополнительные опции
 
 
-tg:CreateNewTags(s, {pth_dir = pth, addsiam = true})
+tg:CreateNewTags(s, {pth_dir = pth, addsiam = false})
 
 s2 = {
   {name = "b1 Второй параметр", defval = 342},

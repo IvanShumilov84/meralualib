@@ -1,3 +1,4 @@
 .vscode
 meralualib/exlib
 meralualib_tests/exlib-test
+meralualib_tests/__CREATE_NEWTAGS__.lua
