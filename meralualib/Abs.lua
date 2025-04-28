@@ -25,9 +25,9 @@ end
 
 --- Проверка допустимости новой реализации
 -- В конструкторе создаваемого класса определить экземпляр данного метода
--- check_instance = Abs:add_stat_instance(N), где N - допустимое число экземпляров данного класса
+-- check_instance = Abs:make_check_inst_func(N), где N - допустимое число экземпляров данного класса
 
-function Abs:add_stat_instance(maxinst)
+function Abs:make_check_inst_func(maxinst)
   maxinst = maxinst or 1
   local inst = 0
   return function ()
@@ -49,7 +49,7 @@ function Abs:alloc_(arg)
   retall = arg.retall or false
 
   local inst = nil
-  local check_inst = self:add_stat_instance(maxinst)
+  local check_inst = self:make_check_inst_func(maxinst)
   ---@param tinst table 
   ---@return table | table[] | nil
   return function (tinst)

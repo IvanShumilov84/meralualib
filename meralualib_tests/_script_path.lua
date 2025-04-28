@@ -15,7 +15,7 @@
 --- Функция определения абсолютного пути в файловой системе к вызывающему скрипту
 --- позволяет добавить относительный путь к местораспоожению файла или пакета в этом 
 --- случае возвращается комбинация путей
---- @param pth string
+--- @param pth? string
 --- @return string
 local function script_path (pth)
   pth = type(pth) == "string" and pth or ""
@@ -59,8 +59,8 @@ return {
   ["script_path"] = script_path,
 
   --- Функция добавляет путь к файлу или пакету в системной переменной
-  --- @param pth string --путь к файлу или пакету
-  --- @param srs string --определяет окончание пути к файлу или спецификатор, расширение
+  --- @param pth? string --путь к файлу или пакету
+  --- @param srs? string --определяет окончание пути к файлу или спецификатор, расширение
   --- @return nil
   ["lib_path"] = function (pth, srs)
     pth = type(pth) == "string" and pth or ""
@@ -70,8 +70,8 @@ return {
   end,
 
   --- Функция добавляет путь к откомпилированному файлу или пакету в системной переменной
-  --- @param pth string --путь к файлу или пакету
-  --- @param srs string --определяет окончание пути к файлу или спецификатор, расширение
+  --- @param pth? string --путь к файлу или пакету
+  --- @param srs? string --определяет окончание пути к файлу или спецификатор, расширение
   --- @return nil
   ["clib_path"] = function (pth, srs)
     pth = type(pth) == "string" and pth or ""

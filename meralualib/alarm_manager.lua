@@ -10,7 +10,7 @@ def_pth = require("_script_path")
 pth = def_pth.script_path("..\\meralualib")
 def_pth.lib_path(pth)
 
-Abs = require("Abs")
+local Abs = require("Abs")
 
 local datatype = require("meralualib\\datatype")
 local CH_NOT_READY = datatype.CH_NOT_READY
