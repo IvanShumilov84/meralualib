@@ -5,7 +5,7 @@ pth = def_pth.script_path()
 def_pth.lib_path(pth .. "\\..\\meralualib")
 
 tg = require("tags")
-uts = require("utils_")
+uts = require("utils")
 
 
 --T_ = tg:new() -- 
@@ -42,5 +42,5 @@ print(tg:set_name_env("Test1"))
 print(tg:get_name_env())
 print(tg:getCountEnvs())
 print(uts.get_count_keys(tg))
-test_tbl = uts.tbl_exact(tg, print, {cnt = 3})
+test_tbl = uts.tbl_exec(tg, print, {cnt = 3})
 print()

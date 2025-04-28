@@ -14,7 +14,7 @@ Tags.alloc_ = Abs:alloc_{maxinst = 1}
 
 
 
-function Tags:creator_factory_envs()
+function Tags:creator_envs()
   local env_ = {}
   local env_name = DEF_ENV
 
@@ -32,7 +32,7 @@ function Tags:creator_factory_envs()
     return env_
   end
 end
-Tags.CreateEnv = Tags:creator_factory_envs()
+Tags.CreateEnv = Tags:creator_envs()
 
 
 function Tags:new()
@@ -93,7 +93,7 @@ function Tags:new()
         table.insert(strings_tname, 'function lua_main() end')      
       end
     end
-    if not uts.find_tblkey(self, env) then
+    if not uts.find_tblvalue(self, env) then
       self[env] = {}
     end
 
@@ -121,7 +121,7 @@ function Tags:new()
   function tg:set_name_env(env)
     env = env or DEF_ENV
     assert(type(env) == "string")
-    if not uts.find_tblkey(self[current_env], env) then
+    if not uts.find_tblvalue(self[current_env], env) then
       self[current_env][env] = {}
     end
     current_env = env
