@@ -7,7 +7,7 @@ def_pth.lib_path(pth .. "..\\meralualib")
 local DEF_ENV = "SIAMGLB" -- глобальное пространство имен по умолчанию
 
 local Abs = require("Abs")
-local uts = require("utils_")
+local uts = require("utils")
 
 local Tags = {}
 Tags.alloc_ = Abs:alloc_{maxinst = 1}
