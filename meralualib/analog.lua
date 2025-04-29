@@ -2,9 +2,9 @@
 -- Модуль обработки аналоговых значений.
 --]]
 
-local t = {}
-t.MODULE_PATH = "meralualib\\"
-t.MODULE_NAME = "'" .. t.MODULE_PATH .. "analog'"
+local M = {}
+M.MODULE_PATH = "meralualib\\"
+M.MODULE_NAME = "'" .. M.MODULE_PATH .. "analog'"
 
 
 local collect = require("meralualib\\collect")
@@ -14,10 +14,14 @@ local list_extend = collect.list_extend
 local datatype = require("meralualib\\datatype")
 local CH_NOT_READY = datatype.CH_NOT_READY
 local CH_STATUS = datatype.CH_STATUS
+local CH_STATUS_MSG = datatype.CH_STATUS_MSG
 local DATAST = datatype.DATAST
 local SIAM_LOG_CAT = datatype.SIAM_LOG_CAT
 local SIAM_LOG_PRIOR = datatype.SIAM_LOG_PRIOR
 local UNKNOWN = datatype.UNKNOWN
+local UNKNOWN_MSG = datatype.UNKNOWN_MSG
+
+local tags = require("meralualib\\tags")
 
 
 do -- Класс триггер изменения аналогового значения.
@@ -66,317 +70,266 @@ do -- Класс триггер изменения аналогового зна
         self.__index = self
         return obj
     end
-    t.ATrig = ATrig
+    M.ATrig = ATrig
 end
 
 
 do  -- Класс Канал.
 
-
-    local Chans = {}
-
-    Chans.class_instances = {}
-
-    -- Получить информацию по аварийности тэгов.
-    ---@return {} ALARMS Поканальный список аварий в формате - error(ошибка канала): boolean, msg(сообщение об ошибке): string 
-    function Chans:get_alarm_info()
-        local ALARMS = {}
-        for _, class_instance in ipairs(Chans.class_instances) do
-            local alarms = {}
-            for i, param in ipairs(class_instance.params) do
-                local error = false
-                local alarm = {}
-                if param.value ~= nil and param.value == CH_NOT_READY or param.status ~= nil and param.status ~= 0 then
-                    error = true
-                    class_instance.params[i].msg_ = "Неисправен параметр '" .. param.name .. "'. " .. param.msg .. ". " .. class_instance.module_name
-                end
-                table.insert(alarm, error)
-                table.insert(alarm, class_instance.params[i].msg_)
-                table.insert(alarms, alarm)
-            end
-            list_extend(ALARMS, alarms)
-        end
-        return ALARMS
-    end
-
-    function Chans:new(module_name)
         ---@class Chan
         local Chan = {}
+        local DASHLINE = "------------------------------------------------"
+        local measure_name = "tags_measure"
+        local calc_name = "tags_calc"
 
-        table.insert(Chans.class_instances, Chan)
-
-        Chan.module_name = module_name or ""
+        Chan.module_name = ""
         Chan.curr_instance_id = 0
-        Chan.params = {}
+        local params = {}  -- Список созданных каналов.
+        Chan.test_ch_prefix = ""  -- Префикс имён тестовых каналов.
+        Chan.test_ch_prefix_def = "test__"  -- Префикс имён тестовых каналов по умолчанию.
+        Chan.test_mode = false  -- Флаг работы каналов в тестовом режиме на чтение данных.
+        Chan.TAGS = {}  -- Список тэгов для создания каналов.
+        Chan.test_enbl = false  -- Использовать тестовый режим.
+        Chan.tags_measure = {}
+        Chan.tags_calc = {}
 
-        function Chan:get_instance_id()
+        -- Создать список имён каналов СИАМ.
+        local function create_channels()
+            local ttag = {}
+            for _, tag in ipairs(Chan.TAGS) do
+                if tag.create_chan then
+                    local item = {}
+                    item.name = tag.chan_name
+                    table.insert(ttag, item)
+                end
+                if tag.test and Chan.test_enbl then
+                    local item = {}
+                    item.name = Chan.test_ch_prefix .. tag.tag_name
+                    table.insert(ttag, item)
+                end
+            end
+            tags:CreateNewTags(ttag)
+        end
+
+        -- Создать тэги скриптов.
+        local function create_tags()
+
+            -- Сортируем таблицу тэгов по возрастанию имён tag_name.
+            table.sort(
+                 Chan.TAGS,
+                function(a, b)
+                    return (a.tag_name and string.lower(a.tag_name) or "") < (b.tag_name and string.lower(b.tag_name) or "")
+                end
+            )
+
+            -- Создаём тэги.
+            local ttag = ""
+            for _, tag in ipairs( Chan.TAGS) do
+                if tag.measure then
+                    ttag = measure_name
+                end
+                if tag.calc then
+                    ttag = calc_name
+                end
+                if tag.measure or tag.calc then
+                    Chan[ttag][tag.tag_name] = Chan:new(tag.tag_name)
+                    for k, v in pairs(tag) do
+                        Chan[ttag][tag.tag_name][k] = v
+                    end
+                    Chan[ttag][tag.tag_name].chan_name = tag.chan_name
+
+                    if tag.avg then
+                        for _, tname in ipairs(tag.values) do
+                            Chan[ttag][tname] = Chan:new(tname)
+                            Chan[ttag][tname].chan_name = tname
+                            Chan[ttag][tname].measure = true
+                        end
+                    end
+                end
+            end
+
+            -- Распечатываем список тэгов каналов измерения.
+            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], DASHLINE, SIAM_LOG_PRIOR["NOTIFY"])
+            local tags_measure_sorted = {}
+            for key, _ in pairs(Chan.tags_measure) do
+                table.insert(tags_measure_sorted, key)
+            end
+            table.sort(tags_measure_sorted, function(a, b) return string.lower(a) < string.lower(b) end)
+            for id, name in ipairs(tags_measure_sorted) do
+                luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], id .. " Создали измеренный тэг '"  ..  Chan.tags_measure[name].tag_name .. "' (канал '" .. Chan.tags_measure[name].chan_name .. "') " .. Chan.module_name, SIAM_LOG_PRIOR["NOTIFY"])
+            end
+
+            -- Распечатываем список тэгов расчётных каналов.
+            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], DASHLINE, SIAM_LOG_PRIOR["NOTIFY"])
+            local tags_calc_sorted = {}
+            for key, _ in pairs( Chan.tags_calc) do
+                table.insert(tags_calc_sorted, key)
+            end
+            table.sort(tags_calc_sorted, function(a, b) return string.lower(a) < string.lower(b) end)
+            for id, name in pairs(tags_calc_sorted) do
+                luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], id .. " Создали расчётный тэг '"  ..  Chan.tags_calc[name].tag_name .. "' (канал '" .. Chan.tags_calc[name].chan_name .. "') " .. Chan.module_name, SIAM_LOG_PRIOR["NOTIFY"])
+            end
+            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], DASHLINE, SIAM_LOG_PRIOR["NOTIFY"])
+        end
+
+        ---@class args
+        ---@field TAGS table Список тэгов для создания каналов.
+        ---@field test_enbl? boolean|nil Использавать тестовый режим.
+        ---@field module_name? string|nil Имя модуля, из которого вызывается класс.
+        ---@field ch_not_ok? number|nil Записываемое значение в канал, если его статус невалиден.
+        ---@field test_ch_prefix? string|nil Префикс тестового имени канала.
+
+        -- Инициализатор класса.
+        function Chan:init(args)
+            Chan.TAGS = args.TAGS
+            Chan.module_name = args.module_name or ""
+            CH_NOT_READY = args.ch_not_ok or CH_NOT_READY
+            Chan.test_ch_prefix = args.test_ch_prefix or Chan.test_ch_prefix_def
+            Chan.test_enbl = args.test_enbl
+            create_channels()
+            create_tags()
+        end
+
+        local function get_instance_id()
             Chan.curr_instance_id = Chan.curr_instance_id + 1
             return Chan.curr_instance_id
         end
 
-        function Chan:clear_instances()
-            Chan.curr_instance_id = 0
-        end
+        ---@class args
+        ---@field test_mode boolean Флаг включения тестового режима.
 
-        -- Инмициализатор класса.
-        ---@param ch_not_ok number Записываемое значение в канал, если его статус невалиден.
-        function Chan:init(ch_not_ok)
-            CH_NOT_READY = ch_not_ok or CH_NOT_READY
+        -- Контроллер.
+        function Chan:upd(args)
+            Chan.curr_instance_id = 0
+            Chan.test_mode = args.test_mode
+
+            for _, param in ipairs(params) do
+                param.error_handle = false
+                if Chan.test_mode and param.test then
+                    param.error_handle = true
+                elseif not Chan.test_mode and param.measure then
+                    param.error_handle = true
+                elseif param.calc then
+                    param.error_handle = true
+                end
+                param:get_source_name()
+                param:get_dest_name()
+            end
         end
 
         -- Получить информацию по авариям каналов.
         function Chan:get_alarm_info()
             local alarms = {}
-            for i, param in ipairs(Chan.params) do
+            for i, param in ipairs(params) do
                 local error = false
                 local alarm = {}
-                if param.value ~= nil and param.value == CH_NOT_READY or param.status ~= nil and param.status ~= 0 then
+                if param.error_handle and (param.value ~= nil and param.value == CH_NOT_READY or param.status ~= nil and param.status ~= 0) then
                     error = true
-                    Chan.params[i].msg_ = "Неисправен параметр '" .. param.name .. "'. " .. param.msg .. ". " .. Chan.module_name
+                    local tag_pref = param.measure and "tags_measure" or "tags_calc"
+                    params[i].msg_ = "Неисправен тэг '" .. tag_pref .. "." .. param.tag_name .. "' (канал '" .. param.source_name .. "'). " .. param.msg .. ". " .. Chan.module_name
                 end
                 table.insert(alarm, error)
-                table.insert(alarm, Chan.params[i].msg_)
+                table.insert(alarm, params[i].msg_)
                 table.insert(alarms, alarm)
             end
             return alarms
         end
 
+        -- Получить число созданных каналов.
+        function Chan:get_channels_qty()
+            return #params
+        end
+
         -- Создать канал.
         ---@return Chan obj Возвращает объект Канал.
-        function Chan:new(name)
-            assert(type(name) == "string", "Parameter 'name': expected 'string', got '" .. type(name) .. "'. ")
+        function Chan:new(tag_name)
+            assert(type(tag_name) == "string", "Parameter 'tag_name': expected 'string', got '" .. type(tag_name) .. "'. ")
 
             -- Публичные свойства.
             local obj = {
+                calc = false,
+                measure = false,
                 value = 0,  -- Значение канала.
                 time = 0,  -- Время канала.
                 status = 0,  -- Статус канала.
                 msg = " ",  -- Сообщение в лог.
-                msg_ = " 11",  -- Сообщение в лог.
-                name = name,  -- Имя параметра.
-                id = Chan:get_instance_id()
+                msg_ = " ",  -- Сообщение в лог.
+                tag_name = tag_name,  -- Имя параметра.
+                chan_name = "",  -- Имя канала.
+                source_name = "",  -- Имя канала для вычитки значения.
+                dest_name = "",  -- Имя канала для записи значения.
+                id = get_instance_id(),  -- Идентификационный номер тэга.
+                error_handle = false,  -- Флаг необходимости обработки ошибок тэга.
             }
-
-            -- luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], "Создали канал "  .. obj.name, SIAM_LOG_PRIOR["NOTIFY"])
 
             local function status_check()
                 if obj.status ~= CH_STATUS["VALID_DATA"] then
-                    obj.msg = "Статус: " .. dict_find_key(CH_STATUS, obj.status, UNKNOWN)
+                    local status = dict_find_key(CH_STATUS, obj.status, UNKNOWN)
+                    obj.msg = "Статус: '" .. (CH_STATUS_MSG[status] or UNKNOWN_MSG) .. " (" .. status .. ")'"
                     obj.value = CH_NOT_READY
                 end
             end
 
-            local function is_invalid(status)
-                return status ~= CH_STATUS["VALID_DATA"]
+            function obj:get_source_name()
+                obj.source_name = Chan.test_mode and (Chan.test_ch_prefix .. obj.tag_name) or obj.chan_name
+            end
+
+            function obj:get_dest_name()
+                if obj.measure then
+                    obj.dest_name = Chan.test_mode and (Chan.test_ch_prefix .. obj.tag_name) or obj.chan_name
+                end
+                if obj.calc then
+                    obj.dest_name = obj.chan_name
+                end
             end
 
             -- Получить данные из канала СИАМ.
-            function obj:getValueEx(ch_name)
-                obj.value, obj.time, obj.status = getValueEx(ch_name)
+            function obj:getValueEx()
+                obj.value, obj.time, obj.status = getValueEx(obj.source_name)
                 status_check()
             end
 
-            -- Получить данные.
+            -- Сохранить данные в тэг.
             function obj:set(data)
                 obj.value = data.value or obj.value
                 obj.status = data.status or obj.status
                 status_check()
                 obj.msg = data.msg or obj.msg
-                obj.name = data.name or obj.name
+                obj.tag_name = data.tag_name or obj.tag_name
             end
 
             -- Сохранить данные в канал СИАМ.
-            function obj:setValueEx(ch_name)
-                setValueEx(ch_name, obj.value, obj.time, obj.status)
-            end
-
-            local function calc(a, b, op)
-                local c = {}
-                local a_
-                local b_
-                if type(a) == "table" and type(b) == "table" then
-                    if is_invalid(a.status) or is_invalid(b.status) then
-                        c.status = CH_STATUS.INVALID_DATA
-                        c.time = a.status > b.status and a.time or b.time
-                        if is_invalid(a.status) and is_invalid(b.status) then
-                            c.msg = (
-                                "Статус: " .. a.name .. " - "  .. dict_find_key(CH_STATUS, a.status, UNKNOWN) .. ", "
-                                .. b.name .. " - "  .. dict_find_key(CH_STATUS, b.status, UNKNOWN)
-                        )
-                        elseif is_invalid(a.status) then
-                            c.msg = "Статус: " .. a.name .. " - "  .. dict_find_key(CH_STATUS, a.status, UNKNOWN)
-                        elseif is_invalid(b.status) then
-                            c.msg = "Статус: " .. b.name .. " - "  .. dict_find_key(CH_STATUS, b.status, UNKNOWN)
-                        end
-                    else
-                        c.status = CH_STATUS["VALID_DATA"]
-                        c.time = a.time
-                    end
-                    a_ = a.value
-                    b_ = b.value
-                elseif type(a) == "table" and type(b) == "number" then
-                        a_ = a.value
-                        b_ = b
-                        c.status = a.status
-                        c.time = a.time
-                        if is_invalid(a.status) then
-                            c.msg = "Статус: " .. a.name .. " - "  .. dict_find_key(CH_STATUS, a.status, UNKNOWN)
-                        end
-                elseif type(a) == "number" and type(b) == "table" then
-                        a_ = a
-                        b_ = b.value
-                        c.status = b.status
-                        c.time = b.time
-                        if is_invalid(b.status) then
-                            c.msg = "Статус: " .. b.name .. " - "  .. dict_find_key(CH_STATUS, b.status, UNKNOWN)
-                        end
-                else
-                    assert(false, "Value is not type of 'Chan' or 'number' ")
-                end
-
-                if a_ == CH_NOT_READY or b_ == CH_NOT_READY or is_invalid(c.status) then
-                    c.value = CH_NOT_READY
-                    c.status = CH_STATUS.INVALID_DATA
-                elseif op == "add" then
-                    c.value = a_ + b_
-                elseif op == "sub" then
-                    c.value = a_ - b_
-                elseif op == "mul" then
-                    c.value = a_ * b_
-                elseif op == "div" then
-                    c.value = a_ / b_
-                elseif op == "pow" then
-                    c.value = a_ ^ b_
-                end
-                return c
-            end
-
-            ---@protected
-            function self.__add(a, b)
-                return calc(a, b, "add")
-            end
-
-            ---@protected
-            function self.__sub(a, b)
-                return calc(a, b, "sub")
-            end
-
-            ---@protected
-            function self.__mul(a, b)
-                return calc(a, b, "mul")
-            end
-
-            ---@protected
-            function self.__div(a, b)
-                return calc(a, b, "div")
-            end
-
-            ---@protected
-            function self.__pow(a, b)
-                return calc(a, b, "pow")
+            function obj:setValueEx()
+                setValueEx(obj.dest_name, obj.value, obj.time, obj.status)
             end
 
             setmetatable(obj, self)
             self.__index = self
 
             local instance_not_exist = true
-            for i, param in ipairs(Chan.params) do
+            for i, param in ipairs(params) do
                 if param.id == obj.id then
-                    obj = Chan.params[i]
+                    obj = params[i]
                     instance_not_exist = false
                 end
             end
 
             if instance_not_exist then
-                table.insert(Chan.params, obj)
+                table.insert(params, obj)
             end
 
             return obj
         end
-        setmetatable(Chan, Chans)
-        Chans.__index = Chans
-        return Chan
-    end
 
-
-    t.Chans = Chans
+    M.Chan = Chan
 end
-
-
---- Декоратор проверки валидности передаваемого параметра в функцию.
----@param ch_not_ready number значение, которое запишется в параметр при невалидном статусе параметра.
----@param f_status_bad number статус функции при невалидности параметра.
----@return function
-function t.ch_qlty(ch_not_ready, f_status_bad)
-    ---@param func function Декорируемая функция.
-    ---@param ch_qty number|nil Количество каналов, передаваемых в функцию.
-    ---@param ret_qty number|nil Количество возвращаемых функцией значений.
-    return function(func, ch_qty, ret_qty)
-        ---@return any result Экземпляры канала, Статус работы передаваемой функции.
-        return function(...)
-            local f_status = {} -- Статус работы передаваемой функции.
-            local args = {...}  -- Список передаваемых аргументов класса Chan в функцию.
-
-            local f_result = {}  -- Результат выполнения функции.
-            local values = {}  -- Список передаваемых в функцию аргументов.
-            local time  -- Время параметра.
-            local status  -- Статус параметра.
-            local chan_qty = ch_qty or #args  -- Число каналов.
-            local ret_qty = ret_qty or 1  -- Число возвращаемых функцией значений.
-            local f_calc = true  -- Флаг разрешения работы функции.
-            for i = 1, chan_qty do
-                if args[i].status ~= 0 or args[i].value == ch_not_ready then
-                    time = args[i].time
-                    status = args[i].status
-                    f_calc = false
-                    break
-                end
-                table.insert(values, args[i].value)
-                time = args[i].time
-                status = args[i].status
-            end
-            local params = {}  -- Параметры на выходе декоратора.
-            if f_calc then
-                for i = chan_qty + 1, #args do
-                    table.insert(values, args[i])
-                end
-                f_result = table.pack(func(table.unpack(values)))
-                f_status = f_result[#f_result]
-                for i = 1, ret_qty do
-                    local param = t.Chan:new()
-                    param.value = f_result[i]
-                    param.time = time
-                    param.status = status
-                    table.insert(params, param)
-                end
-            else
-                f_status.status = f_status_bad
-                f_status.msg = "msg"
-                f_status.func = "func"
-                f_status.param = "param"
-                for i = 1, ret_qty do
-                    local param = t.Chan:new()
-                    param.value = ch_not_ready
-                    param.time = time
-                    param.status = status
-                    table.insert(params, param)
-                end
-            end
-            table.insert(params, f_status)
-            return table.unpack(params)
-        end
-    end
-end
-
-
-
 
 
 --- Декоратор проверки валидности передаваемого параметра в функцию.
 ---@param func table Декорируемая функция.
 ---@param ch_qty? number|nil Количество каналов, передаваемых в функцию.
 ---@param ret_qty? number|nil Количество возвращаемых функцией значений.
-function t.ch_qlty_2(func, ch_qty, ret_qty)
+function M.ch_qlty(func, ch_qty, ret_qty)
     ---@return any res_channels Экземпляры канала, Статус работы передаваемой функции.
     return function(...)
         local args = {...}  -- Список передаваемых аргументов класса Chan в функцию.
@@ -397,7 +350,8 @@ function t.ch_qlty_2(func, ch_qty, ret_qty)
         if #invalid_args ~= 0 then  -- Если входные каналы функции невалидны.
             local msg = {}
             for _, arg in ipairs(invalid_args) do
-                table.insert(msg, "'" .. arg.name .. "' - " .. dict_find_key(CH_STATUS, arg.status, UNKNOWN))
+                local status = dict_find_key(CH_STATUS, arg.status, UNKNOWN)
+                table.insert(msg, "'" .. arg.tag_name .. "' - '" .. (CH_STATUS_MSG[status] or UNKNOWN_MSG) .. " (" .. status .. ")'")
             end
             for i = 1, ret_qty do
                 local chan = {}
@@ -437,4 +391,47 @@ function t.ch_qlty_2(func, ch_qty, ret_qty)
 end
 
 
-return t
+do  -- Функция арифметических вычислений.
+
+    local fname = "arithmetic_function"
+    M[fname] = {name = fname}
+    local mt = {}
+    setmetatable(M[fname], mt)
+
+    -- Функция арифметических вычислений.
+    ---@param value number Тэг.
+    ---@param const number Константа.
+    ---@param op string Вид арифметической операции: "+", "-", "*", "/", "^", .
+    ---@return {results: {result_1: number}, status: {status: number, msg: string}} ret 
+    mt.__call = function(self, value, const, op)
+        local ret = {}  -- Возвращаемое функцией значение.
+        local results = {}  -- Результаты расчётов.
+        local result_1  -- Расчёт функции.
+        local status = {  -- Статус работы функции.
+            ["status"] = DATAST["OK"],
+            ["msg"] = "",
+        }
+        if op == "+" then
+            result_1 = value + const
+        elseif op == "-" then
+            result_1 = value - const
+        elseif op == "*" then
+            result_1 = value * const
+        elseif op == "/" then
+            result_1 = value / const
+        elseif op == "^" then
+            result_1 = value ^ const
+        else
+            result_1 = CH_NOT_READY
+            status["status"] = DATAST.ERROR_CALC
+            status["msg"] = "Не разрешённая операция"
+        end
+        table.insert(results, result_1)
+        ret.results = results
+        ret.status = status
+        return ret
+    end
+end
+
+
+return M
