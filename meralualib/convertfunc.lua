@@ -55,4 +55,24 @@ do --  Преобразование Кельвинов в градусы Цел�
 end
 
 
+do --  Преобразование psi в кПа.
+    ---@param psi number
+    ---@return number
+    function t.psi_to_kPa(psi)
+        assert(type(psi) == "number", "Parameter 'psi': expected 'number', got '" .. type(psi) .. "'. ")
+        return psi * 6.89475729
+    end
+end
+
+
+do --  Преобразование кПа в psi.
+    ---@param kPa number
+    ---@return number
+    function t.kPa_to_psi(kPa)
+        assert(type(kPa) == "number", "Parameter 'kPa': expected 'number', got '" .. type(kPa) .. "'. ")
+        return kPa * 0.14503773773020923
+    end
+end
+
+
 return t
