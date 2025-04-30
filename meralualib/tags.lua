@@ -42,7 +42,7 @@ function Tags:new()
 
   local current_env = "SIAMGLB" --
   local init_ = false -- флаг начальной инициализации 
-
+  local en_addsiam = true
   
 
 
@@ -61,13 +61,14 @@ function Tags:new()
     --]]
 
     assert (type(ttags) == "table", "Assert in function InitTags, the input parameter must be a table")
+
     local strings_tname = {}
     option = option or {}
     assert(type(option) == "table")
     local env = option.env or current_env -- пространство имен
 
     local unique = option.unique or false -- проверка на уникальность
-    local addsiam = option.addsiam or false -- добавлять в СИАМ
+    local addsiam = option.addsiam == nil and en_addsiam or option.addsiam  -- добавлять в СИАМ
     local fname = type(option.fname) == "string" and option.fname or "__CREATE_NEWTAGS__.lua"
 
     local pth_dir = option.pth_dir ~= nil and type(option.pth_dir) == "string" and option.pth_dir or pth .."\\..\\"
@@ -97,13 +98,19 @@ function Tags:new()
       self[env] = {}
     end
 
-    for t_id, tag in ipairs(ttags) do
+    for t_id, tag in pairs(ttags) do
       tag = tag
-      assert(type(tag.name) == "string", "Assert in function InitTags, the key of the table must be a string") 
+      assert(type(tag.name) == "string", "Assert in function InitTags, the key of the table must be a string")
+      local info  = tag.info or ""
+      assert(type(info) == "string", "Assert in function InitTags, the key of the table must be a string")
+      if info:len() > 0 then        
+        info = ' -- ' .. info
+      end
       tag.defval = tag.defval or 0
       --self.tags[tag.name] = tag.defval
       self[env][tag.name] = tag.defval
-      table.insert(strings_tname, '--setValue("' .. tag.name .. '")')
+
+      table.insert(strings_tname, '-- setValue("' .. tag.name .. info .. '")')
     end
 
     if addsiam then 
@@ -160,6 +167,18 @@ function Tags:new()
   function tg:getCountTags(env)
 
     return 0
+  end
+  --- Функция установки глобального флага разрешения добавлять теги в СИАМ
+  ---@param opt boolean | integer
+  function tg:set_en_addsiam(opt)
+    opt = opt or true
+    opt = type(opt) == "boolean" and opt or type(opt) == "number" and opt > 0
+    en_addsiam = opt
+  end
+  --- Функция возвращает значение флага разрешения добавлять теги в СИАМ
+  ---@return boolean
+  function tg:get_en_addsiam()
+    return en_addsiam
   end
 
   setmetatable(tg, self)

@@ -49,9 +49,9 @@ local function register_script_path()
   if f then
     for k in ipairs(tb) do
       f:write(tb[k], "\n")
-    end
+    end 
+    f:close()
   end
-  f:close()
 end
 register_script_path()
 
