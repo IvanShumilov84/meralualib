@@ -4,7 +4,7 @@
 
 
 local M = {}
-local MODULE_NAME = "amanager"
+local MODULE_NAME = "alarm_manager"
 
 
 local def_pth = require("_script_path")
@@ -20,6 +20,9 @@ local dict_find_value = collect.dict_find_value
 local datatype = require("meralualib\\datatype")
 local SIAM_LOG_PRIOR = datatype.SIAM_LOG_PRIOR
 
+local hmi = require("meralualib\\hmi")
+local Btn_click = hmi["Btn_click"]
+
 local tags = require("meralualib\\tags")
 
 
@@ -31,7 +34,8 @@ M.Amanager.alloc_ = Abs:alloc_{maxinst = 1}
 function M.Amanager:new()
 
     local init = false  -- Флаг инициализации.
-    local alarm_list  -- Список ошибок формата {[msgid]={<событие>:boolean, <тип ошибки>:string, <номер таблицы>:number, <сообщение об ошибке>:string}, ...}.
+    -- TODO: Вложенные в список alarm_list аварии вместо списков сделать словарями.
+    local alarm_list  -- Список ошибок формата {{<событие>:boolean, <тип ошибки>:string, <номер таблицы>:number, <сообщение об ошибке>:string}, ...}.
     local active_alarms = {}  -- Список активных аварийных сообщений формата {[msgid]=boolean, ...}.
     local unack_alarms = {}  -- Спосок активных неквитированных сообщений {[msgid]=boolean, ...}.
     local MSG_COLOR_UNACK = 0x00A6A6A6  -- Цвет фона неквитированных сообщений.
@@ -53,8 +57,12 @@ function M.Amanager:new()
         }
     }
     local new_msg_color = {}  -- Список идентификаторов цветов при появлении нового сообщения.
-    local modulename  -- Имя модуля для создания каналов в СИАМ.
-    local alarm_qty_table  -- Словарь списков таблиц, для которых делать подсчёт ошибок.
+    local chname_prefix  -- Префикс имён каналов в СИАМ.
+    local create_channels_conf  -- Конфигурация создания каналов.
+    local TABLE_ID_PREFIX = "table_id_"  -- Префикс к индексу таблиц в именах каналов.
+    local ACK_BTN_NAME = "acknow"  -- Название кнопки квитирования аварий.
+    local ALARM_QTY_NAME = "alarm_qty"
+    local tables_items = {}  -- Сущности таблиц (кнопки квитирования, каналы количества аварий, ...) формата {[table_id] = {acknow_btn, alarm_qty}, ...}.
     local ALARM_TYPES = {  -- Типы аварийных сообщений.
         ALARM_ACK = "alarm_ack",  -- Авариное сообщение с квитированием.
         WARN_ACK = "warn_ack",  -- Предупредительное сообщение с квитированием.
@@ -142,123 +150,83 @@ function M.Amanager:new()
         [ALARM_TYPES.INFO_ACK] = set_info_ack_msg,
     }
 
-    -- Получить имя канала-счётчика аварий определённого типа.
-    local function get_alarm_qty_channel_name(args)
-        local alarm_type = args.alarm_type
-        local table_id = args.table_id
-        return modulename .. ".table_id_" .. table_id .. "." .. alarm_type .. "_qty"
-    end
-
-    -- Получить имя канала-счётчика всех аварий.
-    local function get_all_alarm_qty_channel_name(args)
-        local table_id = args.table_id
-        return modulename .. ".table_id_" .. table_id .. "." .. ALARM_TYPES.ALL_ALARM .. "_qty"
-    end
-
-    -- Получить имя канала-счётчика всех неквитированных аварий.
-    local function get_unack_all_alarm_qty_channel_name(args)
-        local table_id = args.table_id
-        return modulename .. ".table_id_" .. table_id .. "." .. UNACK_ALARM_TYPES.UNACK_ALL_ALARM .. "_qty"
-    end
-
-    -- Получить список имен каналов-счётчиков аварий.
-    local function get_alarm_qty_channel_names(args)
-        local channels = {}
-        local ALARM_TYPES_ = {}
-        dict_extend(ALARM_TYPES_, ALARM_TYPES)
-        dict_extend(ALARM_TYPES_, UNACK_ALARM_TYPES)
-
-        for _, alarm_type in pairs(ALARM_TYPES_) do
-            local tables = args[alarm_type] or {}
-            for table_id in ipairs(tables) do
-                local chan = {}
-                chan.name = get_alarm_qty_channel_name{alarm_type = alarm_type, table_id = table_id}
-                table.insert(channels, chan)
-            end
-        end
-        return channels
-    end
-
     -- Получить количество аварий одного типа.
     local function get_alarm_qty_one_type(args)
-        local alarm_type = args.alarm_type
-        local table_id = args.table_id
-        local alarms = args.alarms
+        args = args or {}
+        local alarm_type = args.alarm_type or nil
+        local table_id = args.table_id or nil
+        local alarms = args.alarms or {}
+        local is_all_alarm = args.is_all_alarm or false
         local alarm_qty = 0
 
         for i = 1, #alarm_list do
-            if alarms[i] and alarm_list[i][3] == table_id and alarm_list[i][2] == alarm_type then
+            if alarms[i] and alarm_list[i][3] == table_id and (is_all_alarm and true or alarm_list[i][2] == alarm_type) then
                 alarm_qty = alarm_qty + 1
             end
         end
         return alarm_qty
     end
 
-    -- Получить количество всех аварий.
-    local function get_all_alarm_qty(args)
-        local table_id = args.table_id
-        local alarm_qty = 0
-
-        for i = 1, #alarm_list do
-            if active_alarms[i] and alarm_list[i][3] == table_id then
-                alarm_qty = alarm_qty + 1
-            end
+    -- Создать каналы кнопок квитирования аварий.
+    local function create_acknow_btn_channels()
+        for _, table_id in ipairs(create_channels_conf.acknow_btn or {}) do
+            if not tables_items[table_id] then tables_items[table_id] = {} end
+            tables_items[table_id][ACK_BTN_NAME] = Btn_click:new(chname_prefix .. TABLE_ID_PREFIX .. table_id .. "." .. ACK_BTN_NAME)
         end
-        return alarm_qty
     end
 
-    -- Получить количество всех неквитированных аварий.
-    local function get_unack_all_alarm_qty(args)
-        local table_id = args.table_id
-        local alarm_qty = 0
-
-        for i = 1, #alarm_list do
-            if unack_alarms[i] and alarm_list[i][3] == table_id then
-                alarm_qty = alarm_qty + 1
-            end
+    -- Обновление состояний кнопок квитирования аварий.
+    local function acknow_btn_upd()
+        for table_id, table in pairs(tables_items) do
+           table[ACK_BTN_NAME]:upd()
+           obj.ack_cmd[table_id] = table[ACK_BTN_NAME].q
         end
-        return alarm_qty
     end
 
-    -- Записать в каналы СИАМ количество аварий.
-    local function set_alarms_qty(args)
+    -- Создать каналы подсчёта аварий.
+    local function create_alarm_qty_channels()
         local ALARM_TYPES_ = {}
+        local channels = {}
         dict_extend(ALARM_TYPES_, ALARM_TYPES)
         dict_extend(ALARM_TYPES_, UNACK_ALARM_TYPES)
-        local alarm_type_
-
-        for _, alarm_type in pairs(ALARM_TYPES_) do
-            local alarms = {}
-            if dict_find_value(ALARM_TYPES, alarm_type) then
-                alarms = active_alarms
-                alarm_type_ = alarm_type
-            elseif dict_find_value(UNACK_ALARM_TYPES, alarm_type) then
-                alarms = unack_alarms
-                alarm_type_ = UNACK_ALARM_MATCHING[alarm_type]
-            end
-            local tables = args[alarm_type] or {}
-            for table_id in ipairs(tables) do
-                local chan_name = get_alarm_qty_channel_name{alarm_type = alarm_type, table_id = table_id}
-                local alarm_qty = get_alarm_qty_one_type{alarm_type = alarm_type_, table_id = table_id, alarms = alarms}
-                setValue(chan_name, alarm_qty)
-
-                chan_name = get_all_alarm_qty_channel_name{table_id = table_id}
-                alarm_qty = get_all_alarm_qty{table_id = table_id}
-                setValue(chan_name, alarm_qty)
-
-                chan_name = get_unack_all_alarm_qty_channel_name{table_id = table_id}
-                alarm_qty = get_unack_all_alarm_qty{table_id = table_id}
-                setValue(chan_name, alarm_qty)
+        for alarm_type, tables in pairs(create_channels_conf[ALARM_QTY_NAME] or {}) do
+            for _, table_id in ipairs(tables) do
+                if dict_find_value(ALARM_TYPES_, alarm_type) then
+                    if not tables_items[table_id] then tables_items[table_id] = {} end
+                    if not tables_items[table_id][ALARM_QTY_NAME] then tables_items[table_id][ALARM_QTY_NAME] = {} end
+                    local name = chname_prefix .. TABLE_ID_PREFIX .. table_id .. "." .. ALARM_QTY_NAME .. "." .. alarm_type
+                    tables_items[table_id][ALARM_QTY_NAME][alarm_type] = name
+                    local channel = {}
+                    channel.name = name
+                    table.insert(channels, channel)
+                end
             end
         end
+        tags:CreateNewTags(channels)
     end
 
-    -- Создать каналы в СИАМ.
-    local function create_channels(args)
-        local alarm_qty = args.alarm_qty
-        local channels = {}
-        list_extend(channels, get_alarm_qty_channel_names(alarm_qty))
-        tags:CreateNewTags(channels)
+    -- Обновление количества аварий и выдача в каналы.
+    local function alarm_qty_channels_upd()
+        for table_id, table in pairs(tables_items) do
+            if table[ALARM_QTY_NAME] then
+                for alarm_type, chname in pairs(table[ALARM_QTY_NAME]) do
+                    local alarms
+                    local alarm_type_
+                    local is_all_alarm
+                    if dict_find_value(ALARM_TYPES, alarm_type) then
+                        alarms = active_alarms
+                        alarm_type_ = alarm_type
+                        if alarm_type == ALARM_TYPES.ALL_ALARM then is_all_alarm = true end
+                    elseif dict_find_value(UNACK_ALARM_TYPES, alarm_type) then
+                        alarms = unack_alarms
+                        alarm_type_ = UNACK_ALARM_MATCHING[alarm_type]
+                        if alarm_type == UNACK_ALARM_TYPES.UNACK_ALL_ALARM then is_all_alarm = true end
+                    end
+                    local alarm_qty = get_alarm_qty_one_type{alarm_type=alarm_type_, table_id=table_id, alarms=alarms, is_all_alarm=is_all_alarm}
+                    setValue(chname, alarm_qty)
+                end
+            end
+        end
     end
 
     -- Циклическое обновление менеджера тревог.
@@ -277,27 +245,29 @@ function M.Amanager:new()
             ALARM_FUNC[alarm_type](text_id, text_msg, msgid, tableid, event)
         end
 
-        set_alarms_qty(alarm_qty_table)
+        acknow_btn_upd()
+        alarm_qty_channels_upd()
     end
 
     ---@class args
-    ---@field create_channels? table Создать каналы модуля для СИАМ.
-    ---@field modulename? string Имя модуля для создания каналов в СИАМ.
+    ---@field create_channels_conf? table Создать каналы модуля для СИАМ.
 
+    -- Инициализация менеджера тревог.
     function obj:init(args)
-        local create_channels_ = args.create_channels
-        modulename = args.modulename or MODULE_NAME
+        args = args or {}
+        create_channels_conf = args.create_channels_conf or {}
+        chname_prefix = args.create_channels_conf.chname_prefix or ""
+        chname_prefix = (chname_prefix == "") and MODULE_NAME or chname_prefix
+        chname_prefix = chname_prefix .. "."
 
-        alarm_qty_table = create_channels_.alarm_qty
-        create_channels(create_channels_)
+        create_acknow_btn_channels()
+        create_alarm_qty_channels()
     end
 
     setmetatable(obj, self)
     self.__index = self
     return obj
 end
-
-
 
 
 return M
