@@ -1,4 +1,4 @@
--- TODO Сделать отчёт по успешности создания каналов и количеству созданных/несозданных каналов. Перечислить несозданные каналы.
+-- 
 
 local def_pth = require("_script_path")
 local pth = def_pth.script_path()
@@ -110,7 +110,7 @@ function Tags:new()
       --self.tags[tag.name] = tag.defval
       self[env][tag.name] = tag.defval
 
-      table.insert(strings_tname, '-- setValue("' .. tag.name .. info .. '")')
+      table.insert(strings_tname, '-- setValue("' .. tag.name .. '")' .. info)
     end
 
     if addsiam then 
