@@ -9,7 +9,7 @@ M.MODULE_NAME = "'" .. M.MODULE_PATH .. "analog'"
 
 local collect = require("meralualib\\collect")
 local dict_find_key = collect.dict_find_key
-local list_extend = collect.list_extend
+local dict_sorted = collect.dict_sorted
 
 local datatype = require("meralualib\\datatype")
 local CH_NOT_READY = datatype.CH_NOT_READY
@@ -79,120 +79,118 @@ do  -- Класс Канал.
         ---@class Chan
         local Chan = {}
         local DASHLINE = "------------------------------------------------"
-        local measure_name = "tags_measure"
-        local calc_name = "tags_calc"
-
-        Chan.module_name = ""
-        Chan.curr_instance_id = 0
+        local chprefix = {}  -- Префиксы к названиям каналов.
+        local sep = "."  -- Разделитель в названиях каналов.
+        local module_name = ""  -- Имя вызывающего модуля.
+        local log_module_info = ""  -- Информация о вызывающем модуле для лога.
+        local curr_instance_id = 0  -- Текущий идентификационный номер канала.
         local params = {}  -- Список созданных каналов.
-        Chan.test_ch_prefix = ""  -- Префикс имён тестовых каналов.
-        Chan.test_ch_prefix_def = "test__"  -- Префикс имён тестовых каналов по умолчанию.
-        Chan.test_mode = false  -- Флаг работы каналов в тестовом режиме на чтение данных.
-        Chan.TAGS = {}  -- Список тэгов для создания каналов.
-        Chan.test_enbl = false  -- Использовать тестовый режим.
-        Chan.tags_measure = {}
-        Chan.tags_calc = {}
+        local test_ch_prefix = ""  -- Префикс имён тестовых каналов.
+        local test_ch_prefix_def = "test."  -- Префикс имён тестовых каналов по умолчанию.
+        local test_mode = false  -- Флаг работы каналов в тестовом режиме на чтение данных.
+        local tags_conf = {}  -- Конфигурация для создания тэгов/каналов.
+        local test_enbl = false  -- Использовать тестовый режим.
+        local comments = {}
+        Chan.tags = {}  -- Созданные тэги для манипуляций в коде.
 
         -- Создать список имён каналов СИАМ.
         local function create_channels()
             local ttag = {}
-            for _, tag in ipairs(Chan.TAGS) do
+            for _, tag in ipairs(tags_conf) do
+                if tag.type == nil then tag.type = "" end
+                if comments[tag.type] == nil then comments[tag.type] = "" end
                 if tag.create_chan then
                     local item = {}
-                    item.name = tag.chan_name
+                    item.name = chprefix[tag.type] and (chprefix[tag.type] .. tag.chan_name) or tag.chan_name
+                    item.info = comments[tag.type] .. " канал для тэга '" .. tag.chan_name  .. "' " .. log_module_info
                     table.insert(ttag, item)
                 end
-                if tag.test and Chan.test_enbl then
+                if tag.test and test_enbl then
                     local item = {}
-                    item.name = Chan.test_ch_prefix .. tag.tag_name
+                    item.name = test_ch_prefix .. tag.tag_name
+                    item.info = "Тестовый канал для тэга '" .. tag.tag_name  .. "' " .. log_module_info
                     table.insert(ttag, item)
                 end
             end
             tags:CreateNewTags(ttag)
         end
 
+        -- Запись в лог СИАМ.
+        local function print_to_log(msg)
+            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], msg, SIAM_LOG_PRIOR["NOTIFY"])
+        end
+
         -- Создать тэги скриптов.
         local function create_tags()
-
-            -- Сортируем таблицу тэгов по возрастанию имён tag_name.
-            table.sort(
-                 Chan.TAGS,
-                function(a, b)
-                    return (a.tag_name and string.lower(a.tag_name) or "") < (b.tag_name and string.lower(b.tag_name) or "")
-                end
-            )
-
             -- Создаём тэги.
-            local ttag = ""
-            for _, tag in ipairs( Chan.TAGS) do
-                if tag.measure then
-                    ttag = measure_name
-                end
-                if tag.calc then
-                    ttag = calc_name
-                end
-                if tag.measure or tag.calc then
-                    Chan[ttag][tag.tag_name] = Chan:new(tag.tag_name)
+            for _, tag in ipairs( tags_conf) do
+                if tag.create_tag then
+                    if not Chan.tags[tag.type] then Chan.tags[tag.type] = {} end
+                    Chan.tags[tag.type][tag.tag_name] = Chan:new(tag.tag_name)
                     for k, v in pairs(tag) do
-                        Chan[ttag][tag.tag_name][k] = v
+                        Chan.tags[tag.type][tag.tag_name][k] = v
                     end
-                    Chan[ttag][tag.tag_name].chan_name = tag.chan_name
+                    Chan.tags[tag.type][tag.tag_name].chan_name = chprefix[tag.type] and (chprefix[tag.type] .. tag.chan_name) or tag.chan_name
 
                     if tag.avg then
                         for _, tname in ipairs(tag.values) do
-                            Chan[ttag][tname] = Chan:new(tname)
-                            Chan[ttag][tname].chan_name = tname
-                            Chan[ttag][tname].measure = true
+                            Chan.tags[tag.type][tname] = Chan:new(tname)
+                            Chan.tags[tag.type][tname].chan_name = tname
+                            Chan.tags[tag.type][tname].type = "measure"
                         end
                     end
                 end
             end
 
-            -- Распечатываем список тэгов каналов измерения.
-            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], DASHLINE, SIAM_LOG_PRIOR["NOTIFY"])
-            local tags_measure_sorted = {}
-            for key, _ in pairs(Chan.tags_measure) do
-                table.insert(tags_measure_sorted, key)
-            end
-            table.sort(tags_measure_sorted, function(a, b) return string.lower(a) < string.lower(b) end)
-            for id, name in ipairs(tags_measure_sorted) do
-                luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], id .. " Создали измеренный тэг '"  ..  Chan.tags_measure[name].tag_name .. "' (канал '" .. Chan.tags_measure[name].chan_name .. "') " .. Chan.module_name, SIAM_LOG_PRIOR["NOTIFY"])
+            -- Функция сортировки.
+            local function sort_order(a, b)
+                return string.lower(a) < string.lower(b)
             end
 
-            -- Распечатываем список тэгов расчётных каналов.
-            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], DASHLINE, SIAM_LOG_PRIOR["NOTIFY"])
-            local tags_calc_sorted = {}
-            for key, _ in pairs( Chan.tags_calc) do
-                table.insert(tags_calc_sorted, key)
+            -- Распечатываем список созданных тэгов.
+            print_to_log(DASHLINE)
+            for tag_type, tag_list in pairs(Chan.tags) do
+                local id = 1
+                for name, _ in dict_sorted(tag_list, sort_order) do
+                    local msg = id .. " Создали '" .. tag_type .. "' тэг '"  ..  Chan.tags[tag_type][name].tag_name .. "' (канал '" .. Chan.tags[tag_type][name].chan_name .. "') " .. log_module_info
+                    print_to_log(msg)
+                    id = id + 1
+                end
+            print_to_log(DASHLINE)
             end
-            table.sort(tags_calc_sorted, function(a, b) return string.lower(a) < string.lower(b) end)
-            for id, name in pairs(tags_calc_sorted) do
-                luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], id .. " Создали расчётный тэг '"  ..  Chan.tags_calc[name].tag_name .. "' (канал '" .. Chan.tags_calc[name].chan_name .. "') " .. Chan.module_name, SIAM_LOG_PRIOR["NOTIFY"])
-            end
-            luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], DASHLINE, SIAM_LOG_PRIOR["NOTIFY"])
         end
 
         ---@class args
-        ---@field TAGS table Список тэгов для создания каналов.
-        ---@field test_enbl? boolean|nil Использавать тестовый режим.
+        ---@field tags_conf table Конфигурация для создания тэгов/каналов.
         ---@field module_name? string|nil Имя модуля, из которого вызывается класс.
         ---@field ch_not_ok? number|nil Записываемое значение в канал, если его статус невалиден.
         ---@field test_ch_prefix? string|nil Префикс тестового имени канала.
+        ---@field test_enbl? boolean|nil Использавать тестовый режим.
+        ---@field chprefix? boolean|nil Словарь префиксов имён каналов.
+        ---@field sep? boolean|nil Разделитель в имени канала между префиксом и именем.
 
         -- Инициализатор класса.
         function Chan:init(args)
-            Chan.TAGS = args.TAGS
-            Chan.module_name = args.module_name or ""
+            args = args or {}
+            tags_conf = args.tags_conf or {}
+            module_name = args.module_name or ""
+            log_module_info = (module_name == "") and "" or ("[Модуль '" .. module_name .. "']")
             CH_NOT_READY = args.ch_not_ok or CH_NOT_READY
-            Chan.test_ch_prefix = args.test_ch_prefix or Chan.test_ch_prefix_def
-            Chan.test_enbl = args.test_enbl
+            test_ch_prefix = args.test_ch_prefix or test_ch_prefix_def
+            test_enbl = args.test_enbl or false
+            chprefix = args.chprefix or {}
+            sep = args.sep and args.sep or sep
+            for k, v in pairs(chprefix) do
+                chprefix[k] = v .. sep
+            end
+            comments = args.comments or {}
             create_channels()
             create_tags()
         end
 
         local function get_instance_id()
-            Chan.curr_instance_id = Chan.curr_instance_id + 1
-            return Chan.curr_instance_id
+            curr_instance_id = curr_instance_id + 1
+            return curr_instance_id
         end
 
         ---@class args
@@ -200,16 +198,14 @@ do  -- Класс Канал.
 
         -- Контроллер.
         function Chan:upd(args)
-            Chan.curr_instance_id = 0
-            Chan.test_mode = args.test_mode
+            curr_instance_id = 0
+            test_mode = args.test_mode
 
             for _, param in ipairs(params) do
                 param.error_handle = false
-                if Chan.test_mode and param.test then
+                if test_mode and param.test then
                     param.error_handle = true
-                elseif not Chan.test_mode and param.measure then
-                    param.error_handle = true
-                elseif param.calc then
+                elseif not test_mode and (param.type == "measure" or param.type == "calc") then
                     param.error_handle = true
                 end
                 param:get_source_name()
@@ -218,21 +214,28 @@ do  -- Класс Канал.
         end
 
         -- Получить информацию по авариям каналов.
-        function Chan:get_alarm_info()
+        function Chan:get_alarm_info(args)
+            local alarm_type = args.alarm_type
+            local table_id = args.table_id
             local alarms = {}
+            local chan_errors = false
             for i, param in ipairs(params) do
                 local error = false
-                local alarm = {}
                 if param.error_handle and (param.value ~= nil and param.value == CH_NOT_READY or param.status ~= nil and param.status ~= 0) then
                     error = true
-                    local tag_pref = param.measure and "tags_measure" or "tags_calc"
-                    params[i].msg_ = "Неисправен тэг '" .. tag_pref .. "." .. param.tag_name .. "' (канал '" .. param.source_name .. "'). " .. param.msg .. ". " .. Chan.module_name
+                    local tag_pref = param.type and param.type or ""
+                    params[i].msg_ = "Неисправен тэг '" .. tag_pref .. "." .. param.tag_name .. "' (канал '" .. param.source_name .. "'). " .. param.msg .. ". " .. log_module_info
                 end
-                table.insert(alarm, error)
-                table.insert(alarm, params[i].msg_)
+                local alarm = {
+                    event = error,
+                    type = alarm_type,
+                    table_id = table_id,
+                    msg = params[i].msg_,
+                }
                 table.insert(alarms, alarm)
+                chan_errors = error or chan_errors
             end
-            return alarms
+            return alarms, chan_errors
         end
 
         -- Получить число созданных каналов.
@@ -271,14 +274,14 @@ do  -- Класс Канал.
             end
 
             function obj:get_source_name()
-                obj.source_name = Chan.test_mode and (Chan.test_ch_prefix .. obj.tag_name) or obj.chan_name
+                obj.source_name = test_mode and (test_ch_prefix .. obj.tag_name) or obj.chan_name
             end
 
             function obj:get_dest_name()
-                if obj.measure then
-                    obj.dest_name = Chan.test_mode and (Chan.test_ch_prefix .. obj.tag_name) or obj.chan_name
+                if obj.type == "measure" then
+                    obj.dest_name = test_mode and (test_ch_prefix .. obj.tag_name) or obj.chan_name
                 end
-                if obj.calc then
+                if obj.type == "calc" then
                     obj.dest_name = obj.chan_name
                 end
             end
