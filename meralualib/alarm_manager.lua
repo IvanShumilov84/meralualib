@@ -13,7 +13,6 @@ def_pth.lib_path(pth)
 
 local Abs = require("meralualib\\Abs")
 local collect = require("meralualib\\collect")
-local list_extend = collect.list_extend
 local dict_extend = collect.dict_extend
 local dict_find_value = collect.dict_find_value
 
@@ -34,7 +33,6 @@ M.Amanager.alloc_ = Abs:alloc_{maxinst = 1}
 function M.Amanager:new()
 
     local init = false  -- Флаг инициализации.
-    -- TODO: Вложенные в список alarm_list аварии вместо списков сделать словарями.
     local alarm_list  -- Список ошибок формата {{<событие>:boolean, <тип ошибки>:string, <номер таблицы>:number, <сообщение об ошибке>:string}, ...}.
     local active_alarms = {}  -- Список активных аварийных сообщений формата {[msgid]=boolean, ...}.
     local unack_alarms = {}  -- Спосок активных неквитированных сообщений {[msgid]=boolean, ...}.
@@ -57,6 +55,7 @@ function M.Amanager:new()
         }
     }
     local new_msg_color = {}  -- Список идентификаторов цветов при появлении нового сообщения.
+    local module_name  -- Имя модуля, для которого создаются каналы Менеджера тревог.
     local chname_prefix  -- Префикс имён каналов в СИАМ.
     local create_channels_conf  -- Конфигурация создания каналов.
     local TABLE_ID_PREFIX = "table_id_"  -- Префикс к индексу таблиц в именах каналов.
@@ -160,7 +159,7 @@ function M.Amanager:new()
         local alarm_qty = 0
 
         for i = 1, #alarm_list do
-            if alarms[i] and alarm_list[i][3] == table_id and (is_all_alarm and true or alarm_list[i][2] == alarm_type) then
+            if alarms[i] and alarm_list[i].table_id == table_id and (is_all_alarm and true or alarm_list[i].type == alarm_type) then
                 alarm_qty = alarm_qty + 1
             end
         end
@@ -198,6 +197,7 @@ function M.Amanager:new()
                     tables_items[table_id][ALARM_QTY_NAME][alarm_type] = name
                     local channel = {}
                     channel.name = name
+                    channel.info = "Менеджер тревог: таблица №" .. table_id .. ", канал количества ошибок типа'" .. alarm_type .. "' [модуль '" .. module_name .. "']."
                     table.insert(channels, channel)
                 end
             end
@@ -237,11 +237,11 @@ function M.Amanager:new()
         obj.reset = reset
 
         for msgid, alarm in ipairs(alarms) do
-            local event = alarm[1]
-            local alarm_type = alarm[2]
-            local tableid = alarm[3]
+            local event = alarm.event
+            local alarm_type = alarm.type
+            local tableid = alarm.table_id
             local text_id = "[id" .. msgid .. "] "
-            local text_msg = alarm[4]
+            local text_msg = alarm.msg
             ALARM_FUNC[alarm_type](text_id, text_msg, msgid, tableid, event)
         end
 
@@ -259,6 +259,8 @@ function M.Amanager:new()
         chname_prefix = args.create_channels_conf.chname_prefix or ""
         chname_prefix = (chname_prefix == "") and MODULE_NAME or chname_prefix
         chname_prefix = chname_prefix .. "."
+        module_name = args.create_channels_conf.module_name or ""
+        module_name = (module_name == "") and MODULE_NAME or module_name
 
         create_acknow_btn_channels()
         create_alarm_qty_channels()
