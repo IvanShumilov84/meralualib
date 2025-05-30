@@ -227,8 +227,9 @@ do  -- Класс Канал.
                     params[i].msg_ = "Неисправен тэг '" .. tag_pref .. "." .. param.tag_name .. "' (канал '" .. param.source_name .. "'). " .. param.msg .. ". " .. log_module_info
                 end
                 local alarm = {
+                    logic = "event",
                     event = error,
-                    type = alarm_type,
+                    class = alarm_type,
                     table_id = table_id,
                     msg = params[i].msg_,
                 }
