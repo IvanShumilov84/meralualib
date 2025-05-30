@@ -75,4 +75,40 @@ do --  Функция расширения словаря.
 end
 
 
+-- Итератор отсортированного словаря.
+---@param t table Словарь для сортировки.
+---@param order? function Кастомная функция сортировки (по умолчанию: сортировка по возрастанию).
+---@return function iter Возвращается итератор на отсортированный словарь.
+function M.dict_sorted(t, order)
+    -- Собираем ключи таблицы в массив
+    local keys = {}
+    for k in pairs(t) do
+        keys[#keys + 1] = k
+    end
+
+    -- Сортируем ключи. Можно использовать кастомную функцию сортировки
+    if order then
+        table.sort(keys, function(a, b) return order(a, b) end)
+    else
+        table.sort(keys, function(a, b)
+            -- Для смешанных типов (числа и строки) числа идут первыми
+            if type(a) == "number" and type(b) == "number" then return a < b
+            elseif type(a) == "number" then return true
+            elseif type(b) == "number" then return false
+            else return tostring(a) < tostring(b)
+            end
+        end)
+    end
+
+    -- Создаем итератор
+    local i = 0
+    return function()
+        i = i + 1
+        if keys[i] then
+            return keys[i], t[keys[i]]
+        end
+    end
+end
+
+
 return M
