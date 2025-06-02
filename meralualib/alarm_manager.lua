@@ -339,7 +339,6 @@ function M.Amanager:new()
         local hyst_low = args.hyst_low or 0
         local hyst_high = args.hyst_high or 0
 
-        local result = {}
         local event_ = false
         if logic == LOGIC.event then
             event_ = event
@@ -378,10 +377,7 @@ function M.Amanager:new()
                 end
             end
         end
-        result = {
-            event = event_,
-        }
-        return result
+        return event_
     end
 
     -- Обновление отображения тревог в Менеджере тревог.
@@ -417,27 +413,27 @@ function M.Amanager:new()
             hyst_low = hyst_low < 0 and 0 or hyst_low
             hyst_high = hyst_high < 0 and 0 or hyst_high
 
-            local result = get_event{
+            event = get_event{
                 msgid=msgid, logic=logic, event=event, channel=channel, limit_type=limit_type, low=low, high=high,
                 discrete_val=discrete_val, hyst_low=hyst_low, hyst_high=hyst_high
             }
-            event = result.event
-
-            if display_analog_val then
-                cur_analog_val = "(" .. getEstimate(channel) .. ")"
-            else
-                cur_analog_val = ""
-            end
 
             local analog_text = ""  -- Тескт при выводе аналоговой тревоги.
-            if logic == LOGIC.analog and limit_type == LIMIT_TYPE.low then
-                analog_text = ": '" .. channel .. "'" .. cur_analog_val .. " < " .. low
-            elseif logic == LOGIC.analog and limit_type == LIMIT_TYPE.high then
-                analog_text = ": '" .. channel .. "'" .. cur_analog_val .. " > " .. high
-            elseif logic == LOGIC.analog and limit_type == LIMIT_TYPE.low_high and analog_low_high_last[msgid] == limit_state.low then
-                analog_text = ": '" .. channel .. "'" .. cur_analog_val .. " < " .. low
-            elseif logic == LOGIC.analog and limit_type == LIMIT_TYPE.low_high and analog_low_high_last[msgid] == limit_state.high then
-                analog_text = ": '" .. channel .. "'" .. cur_analog_val .. " > " .. high
+            if logic == LOGIC.analog then
+                cur_analog_val = ""
+                if display_analog_val then
+                    cur_analog_val = "(" .. getEstimate(channel) .. ")"
+                end
+                analog_text = ": '" .. channel .. "'" .. cur_analog_val
+                if limit_type == LIMIT_TYPE.low then
+                    analog_text = analog_text .. " < " .. low
+                elseif limit_type == LIMIT_TYPE.high then
+                    analog_text = analog_text .. " > " .. high
+                elseif limit_type == LIMIT_TYPE.low_high and analog_low_high_last[msgid] == limit_state.low then
+                    analog_text = analog_text .. " < " .. low
+                elseif limit_type == LIMIT_TYPE.low_high and analog_low_high_last[msgid] == limit_state.high then
+                    analog_text = analog_text .. " > " .. high
+                end
             end
 
             local text = {  -- Шаблон для вывода текста тревоги.
