@@ -190,6 +190,8 @@ function M.Amanager:new()
         local msg_color
         local text_inactive = "[Неактивна] " .. text_msg
         local log_prior = ALARM_CLASS_CONFIG[alarm_type].log_prior
+
+        -- Установка тревоги.
         if event and (not active_alarms[msgid] or unack_alarms[msgid]) then
             Delete_Alarm(msgid)
             active_alarms[msgid] = true
@@ -199,11 +201,13 @@ function M.Amanager:new()
             U_Alarm2(text_msg, msgid, tableid, msg_color, log_prior)
         end
 
+        -- Имитация вспышки цвета тревоги при её появлении.
         msg_color = get_msg_color[msgid] and get_msg_color[msgid]() or nil
         if event and msg_color ~= nil then
             U_Alarm2_Change(text_msg, msgid, tableid, msg_color, log_prior, ALARM_STATUS.ACTIVE)
         end
 
+        -- Перевод тревоги в состояние неквитированной.
         if not event and active_alarms[msgid] then
             Delete_Alarm(msgid)
             U_Alarm2(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY)
@@ -211,20 +215,18 @@ function M.Amanager:new()
             active_alarms[msgid] = false
         end
 
-        if unack_alarms[msgid] and obj.ack_cmd[tableid] then
-            Delete_Alarm(msgid)
-        end
-
-        if obj.reset then
-            -- Delete_Alarm(msgid)
+        -- Удаление тревоги или перевод неквитированной тревоги в квитированную через внешнюю кнопку квитирования.
+        if obj.reset or unack_alarms[msgid] and obj.ack_cmd[tableid] then
             U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, ALARM_STATUS.ACK)
             active_alarms[msgid] = false
         end
 
+        -- Обновление текущего значения параметра в сообщении активной тревоги.
         if logic == LOGIC.analog and active_alarms[msgid] and msg_color == nil and display_analog_val then
             U_Alarm2_Change(text_msg, msgid, tableid, MSG_COLOR[alarm_type], log_prior, ALARM_STATUS.ACTIVE)
         end
 
+        -- Обновление текущего значения параметра в сообщении неквитированной тревоги.
         if logic == LOGIC.analog and unack_alarms[msgid] and display_analog_val then
             U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, ALARM_STATUS.NOT_ACTIVE)
         end
