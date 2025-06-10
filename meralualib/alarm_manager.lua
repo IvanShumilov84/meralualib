@@ -61,6 +61,7 @@ function M.Amanager:new()
                 ch_low: string,  -- Имя канала для значения нижнего предела при logic="analog".
                 ch_high: string,  -- Имя канала для значения верхнего предела при logic="analog".
                 confirm_method: CONFIRM_METHOD,  -- Способ подтверждения события.
+                prior: number,  -- Приоритет тревоги в пределах одного класса тревог ALARM_CLASS: 1 - наибольший, 1000 - наименьший.
 
                 delay: number,  -- Время задержки обработки тревоги, секунды.
             },
@@ -84,6 +85,9 @@ function M.Amanager:new()
     local analog_low_high_last = {}  -- Список последних состояний сработки сообщений вида: {[msgid] = "low"/"high", ...}
     local display_analog_val = false
     local cur_analog_val = ""
+    local PRIOR_DEF = 20  -- Приоритет тревоги в пределах одного класса тревог по умолчанию.
+    local PRIOR_MIN = 1
+    local PRIOR_MAX = 1000
     local LOGIC = {  -- Способ наблюдения за событием.
         discrete = "discrete",  -- Событие дискретное: ноль/отличное от ноля.
         analog = "analog",  -- Событие аналоговое.
@@ -186,7 +190,7 @@ function M.Amanager:new()
     end
 
     -- Установить тревогу со способом подтверждения: CONFIRM_METHOD.rep_ack.
-    local function set_rep_ack(text_msg, msgid, tableid, event, alarm_type, logic)
+    local function set_rep_ack(text_msg, msgid, tableid, event, alarm_type, logic, prior)
         local msg_color
         local text_inactive = "[Неактивна] " .. text_msg
         local log_prior = ALARM_CLASS_CONFIG[alarm_type].log_prior
@@ -198,37 +202,37 @@ function M.Amanager:new()
             unack_alarms[msgid] = false
             get_msg_color[msgid] = get_color_iter(MSG_COLOR[alarm_type], COLOR_QTY)
             msg_color = get_msg_color[msgid]()
-            U_Alarm2(text_msg, msgid, tableid, msg_color, log_prior)
+            U_Alarm2(text_msg, msgid, tableid, msg_color, log_prior, prior)
         end
 
         -- Имитация вспышки цвета тревоги при её появлении.
         msg_color = get_msg_color[msgid] and get_msg_color[msgid]() or nil
         if event and msg_color ~= nil then
-            U_Alarm2_Change(text_msg, msgid, tableid, msg_color, log_prior, ALARM_STATUS.ACTIVE)
+            U_Alarm2_Change(text_msg, msgid, tableid, msg_color, log_prior, prior, ALARM_STATUS.ACTIVE)
         end
 
         -- Перевод тревоги в состояние неквитированной.
         if not event and active_alarms[msgid] then
             Delete_Alarm(msgid)
-            U_Alarm2(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY)
-            U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, ALARM_STATUS.NOT_ACTIVE)
+            U_Alarm2(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, prior)
+            U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, prior, ALARM_STATUS.NOT_ACTIVE)
             active_alarms[msgid] = false
         end
 
         -- Удаление тревоги или перевод неквитированной тревоги в квитированную через внешнюю кнопку квитирования.
         if obj.reset or unack_alarms[msgid] and obj.ack_cmd[tableid] then
-            U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, ALARM_STATUS.ACK)
+            U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, prior, ALARM_STATUS.ACK)
             active_alarms[msgid] = false
         end
 
         -- Обновление текущего значения параметра в сообщении активной тревоги.
         if logic == LOGIC.analog and active_alarms[msgid] and msg_color == nil and display_analog_val then
-            U_Alarm2_Change(text_msg, msgid, tableid, MSG_COLOR[alarm_type], log_prior, ALARM_STATUS.ACTIVE)
+            U_Alarm2_Change(text_msg, msgid, tableid, MSG_COLOR[alarm_type], log_prior, prior, ALARM_STATUS.ACTIVE)
         end
 
         -- Обновление текущего значения параметра в сообщении неквитированной тревоги.
         if logic == LOGIC.analog and unack_alarms[msgid] and display_analog_val then
-            U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, ALARM_STATUS.NOT_ACTIVE)
+            U_Alarm2_Change(text_inactive, msgid, tableid, MSG_COLOR_UNACK, SIAM_LOG_PRIOR.NOTIFY, prior, ALARM_STATUS.NOT_ACTIVE)
         end
     end
 
@@ -384,6 +388,17 @@ function M.Amanager:new()
         return event_
     end
 
+
+    -- Проверка приоритета тревоги на допустимое значение.
+    local function check_prior(prior)
+        local prior_ = PRIOR_DEF
+        if type(prior) == "number" and prior >= PRIOR_MIN and prior <= PRIOR_MAX then
+            prior_ = prior
+        end
+        return prior_
+    end
+
+
     -- Обновление отображения тревог в Менеджере тревог.
     local function alarm_upd()
         for msgid, alarm in ipairs(alarm_list) do
@@ -402,6 +417,7 @@ function M.Amanager:new()
             local discrete_val = alarm.discrete_val or 0
             local hyst_low = alarm.hyst_low or 0
             local hyst_high = alarm.hyst_high or 0
+            local prior = check_prior(alarm.prior)
 
             local ch_low_value, ch_low_status
             ch_low_value, _, ch_low_status = getEstimate(ch_low)
@@ -453,7 +469,7 @@ function M.Amanager:new()
                 unack_alarms[msgid] = false
             end
 
-            CONFIRM_METHOD_FUNC[confirm_method](text_msg, msgid, tableid, event, alarm_type, logic)
+            CONFIRM_METHOD_FUNC[confirm_method](text_msg, msgid, tableid, event, alarm_type, logic, prior)
 
         end
     end
