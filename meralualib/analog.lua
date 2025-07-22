@@ -1,17 +1,15 @@
 --[[
--- Модуль обработки аналоговых значений.
+    Модуль обработки аналоговых значений.
 --]]
 
 local M = {}
-M.MODULE_PATH = "meralualib\\"
-M.MODULE_NAME = "'" .. M.MODULE_PATH .. "analog'"
+DEBUG = false
 
-
-local collect = require("meralualib\\collect")
+local collect = require("meralualib.collect")
 local dict_find_key = collect.dict_find_key
 local dict_sorted = collect.dict_sorted
 
-local datatype = require("meralualib\\datatype")
+local datatype = require("meralualib.datatype")
 local CH_NOT_READY = datatype.CH_NOT_READY
 local CH_STATUS = datatype.CH_STATUS
 local CH_STATUS_MSG = datatype.CH_STATUS_MSG
@@ -21,7 +19,11 @@ local SIAM_LOG_PRIOR = datatype.SIAM_LOG_PRIOR
 local UNKNOWN = datatype.UNKNOWN
 local UNKNOWN_MSG = datatype.UNKNOWN_MSG
 
-local tags = require("meralualib\\tags")
+if DEBUG then
+    require("meralualib.siam_api").replace_siam_funcs()
+end
+
+local tags = require("meralualib.tags")
 
 
 do -- Класс триггер изменения аналогового значения.
@@ -78,6 +80,7 @@ do  -- Класс Канал.
 
         ---@class Chan
         local Chan = {}
+        local DEBUG = false
         local DASHLINE = "------------------------------------------------"
         local chprefix = {}  -- Префиксы к названиям каналов.
         local sep = "."  -- Разделитель в названиях каналов.
@@ -92,6 +95,11 @@ do  -- Класс Канал.
         local test_enbl = false  -- Использовать тестовый режим.
         local comments = {}
         Chan.tags = {}  -- Созданные тэги для манипуляций в коде.
+        local CH_TYPE = {  -- Тип канала.
+            CALC = "calc",  -- Расчётный.
+            INITDATA_IN = "initdata_in",  -- Исходные данные, входной.
+            MEASURE = "measure",  -- Измеренный.
+        }
 
         -- Создать список имён каналов СИАМ.
         local function create_channels()
@@ -119,7 +127,7 @@ do  -- Класс Канал.
         local function print_to_log(msg)
             luacpLogMessage(SIAM_LOG_CAT["LUA_CALC"], msg, SIAM_LOG_PRIOR["NOTIFY"])
         end
-
+        
         -- Создать тэги скриптов.
         local function create_tags()
             -- Создаём тэги.
@@ -132,11 +140,11 @@ do  -- Класс Канал.
                     end
                     Chan.tags[tag.type][tag.tag_name].chan_name = chprefix[tag.type] and (chprefix[tag.type] .. tag.chan_name) or tag.chan_name
 
-                    if tag.avg then
-                        for _, tname in ipairs(tag.values) do
+                    if tag.action and tag.action.operator and tag.action.operator == "avg" then
+                        for _, tname in ipairs(tag.action.source) do
                             Chan.tags[tag.type][tname] = Chan:new(tname)
                             Chan.tags[tag.type][tname].chan_name = tname
-                            Chan.tags[tag.type][tname].type = "measure"
+                            Chan.tags[tag.type][tname].type = CH_TYPE.MEASURE
                         end
                     end
                 end
@@ -152,7 +160,7 @@ do  -- Класс Канал.
             for tag_type, tag_list in pairs(Chan.tags) do
                 local id = 1
                 for name, _ in dict_sorted(tag_list, sort_order) do
-                    local msg = id .. " Создали '" .. tag_type .. "' тэг '"  ..  Chan.tags[tag_type][name].tag_name .. "' (канал '" .. Chan.tags[tag_type][name].chan_name .. "') " .. log_module_info
+                    local msg = id .. " Создали '" .. tag_type .. "' тэг '"  ..  Chan.tags[tag_type][name].tag_name .. "' (ссылается на канал '" .. Chan.tags[tag_type][name].chan_name .. "') " .. log_module_info
                     print_to_log(msg)
                     id = id + 1
                 end
@@ -205,7 +213,9 @@ do  -- Класс Канал.
                 param.error_handle = false
                 if test_mode and param.test then
                     param.error_handle = true
-                elseif not test_mode and (param.type == "measure" or param.type == "calc") then
+                elseif not test_mode and param.type == CH_TYPE.MEASURE then
+                    param.error_handle = true
+                elseif param.type == CH_TYPE.CALC then
                     param.error_handle = true
                 end
                 param:get_source_name()
@@ -213,6 +223,7 @@ do  -- Класс Канал.
             end
         end
 
+        --TODO: log_module_info - сделать информацию о модуле, откуда была вызвана ошибка.
         -- Получить информацию по авариям каналов.
         function Chan:get_alarm_info(args)
             local alarm_type = args.alarm_type
@@ -224,7 +235,13 @@ do  -- Класс Канал.
                 if param.error_handle and (param.value ~= nil and param.value == CH_NOT_READY or param.status ~= nil and param.status ~= 0) then
                     error = true
                     local tag_pref = param.type and param.type or ""
-                    params[i].msg_ = "Неисправен тэг '" .. tag_pref .. "." .. param.tag_name .. "' (канал '" .. param.source_name .. "'). " .. param.msg .. ". " .. log_module_info
+                    local ch_name = ""
+                    if param.type == CH_TYPE.MEASURE then
+                        ch_name = param.source_name
+                    elseif param.type == CH_TYPE.CALC then
+                        ch_name = param.dest_name
+                    end
+                    params[i].msg_ = "Неисправен тэг '" .. tag_pref .. "." .. param.tag_name .. "' (канал '" .. ch_name .. "'). " .. param.msg .. ". " .. log_module_info
                 end
                 local alarm = {
                     logic = "event",
@@ -251,8 +268,6 @@ do  -- Класс Канал.
 
             -- Публичные свойства.
             local obj = {
-                calc = false,
-                measure = false,
                 value = 0,  -- Значение канала.
                 time = 0,  -- Время канала.
                 status = 0,  -- Статус канала.
@@ -264,13 +279,16 @@ do  -- Класс Канал.
                 dest_name = "",  -- Имя канала для записи значения.
                 id = get_instance_id(),  -- Идентификационный номер тэга.
                 error_handle = false,  -- Флаг необходимости обработки ошибок тэга.
+                save_value = false  -- Флаг сохранения значения в канале при неисправности. 
             }
 
             local function status_check()
                 if obj.status ~= CH_STATUS["VALID_DATA"] then
                     local status = dict_find_key(CH_STATUS, obj.status, UNKNOWN)
                     obj.msg = "Статус: '" .. (CH_STATUS_MSG[status] or UNKNOWN_MSG) .. " (" .. status .. ")'"
-                    obj.value = CH_NOT_READY
+                    if not obj.save_value then
+                        obj.value = CH_NOT_READY
+                    end
                 end
             end
 
@@ -279,10 +297,13 @@ do  -- Класс Канал.
             end
 
             function obj:get_dest_name()
-                if obj.type == "measure" then
+                if obj.type == CH_TYPE.MEASURE then
                     obj.dest_name = test_mode and (test_ch_prefix .. obj.tag_name) or obj.chan_name
                 end
-                if obj.type == "calc" then
+                if obj.type == CH_TYPE.CALC then
+                    obj.dest_name = obj.chan_name
+                end
+                if obj.type == CH_TYPE.INITDATA_IN then
                     obj.dest_name = obj.chan_name
                 end
             end
@@ -297,6 +318,7 @@ do  -- Класс Канал.
             function obj:set(data)
                 obj.value = data.value or obj.value
                 obj.status = data.status or obj.status
+                obj.save_value = data.save_value or obj.save_value
                 status_check()
                 obj.msg = data.msg or obj.msg
                 obj.tag_name = data.tag_name or obj.tag_name
