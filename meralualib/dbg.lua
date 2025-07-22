@@ -7,7 +7,7 @@ local M = {}
 
 
 -- Лог в консоль.
--- Вид лога: !!!DEBUG: data = (<переданные данные data>)   file = (path = <путь до файла, вызвавшего функцию>, line = <номер строки вызова функции>)
+-- Вид лога: !!!DEBUG: data = ([1] = <значение 1>, ...)   file = (path = <путь до файла, вызвавшего функцию>, line = <номер строки вызова функции>)
 function M.clog(args)
     local label = args.label or "!!!DEBUG:"  -- Префикс сообщения в логе консоли.
     local sep = args.sep or ", "  -- Разделитель между переданными анализируемыми данными.
@@ -25,9 +25,6 @@ function M.clog(args)
 
     -- Нормализуем путь под текущую ОС
     full_path = full_path:gsub("/", separ):gsub("\\", separ)
-
-    -- Извлекаем имя файла
-    local file_name = full_path:match("([^" .. separ .. "]+)$") or full_path
 
     -- Определяем, является ли путь относительным
     local is_relative = not full_path:match("^[%a]:") and not full_path:find("^" .. separ .. separ)
@@ -48,9 +45,9 @@ function M.clog(args)
 
     io.write(label, " ")
     io.write("data = (")
-    for _, v in ipairs(data) do
-        v = tostring(v)
-        io.write(v, sep)
+    for k, v in ipairs(data) do
+        local value = tostring(v)
+        io.write("[", k, "] = ", value, sep)
     end
     io.write(")   ")
     io.write(" file = (path = '", absolute_path, "', line = ", line, ")")
