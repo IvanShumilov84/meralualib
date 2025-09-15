@@ -21,7 +21,7 @@ t.get_count_keys = function (tbl, fld_type)
   local res = 0
   fld_type = fld_type or "any"
   for k in pairs(tbl) do
-    if fld_type == "any" or type(k) == fld_type then 
+    if fld_type == "any" or type(k) == fld_type then
       res = res + 1
     end
   end
@@ -36,11 +36,12 @@ end
 
 --- Функция поиска значения в таблице.
 --- Поиск возможен по ключу, либо по значению, либо по обоим полям
+--- Возвращает упакованное значение status, {key, value}
 ---@param tbl table
 ---@param value any
 ---@param option? f_opt
----@return boolean, any, any
-t.find_tblvalue = function (tbl, value, option)
+---@return status boolean, table<{key: any, value: any}>
+t.find_tblval = function (tbl, value, option)
   assert(type(tbl) == "table")
   assert(value ~= nil)
   option = option or "key"
@@ -49,16 +50,27 @@ t.find_tblvalue = function (tbl, value, option)
   for k, val in pairs(tbl) do
     if option == "key" or option == "all" then
       if k == value then
-        return true, k, val
+        return true, {k, val}
       end
     end
     if option == "val" or option == "all" then
       if val == value then
-        return true, k, val
+        return true, {k, val}
       end
     end
   end
-  return false, nil, nil
+  return false, {}
+end
+
+--- Функция поиска значения в таблице.
+--- Возвращает распакованные значения status, key, value
+---@param tbl table
+---@param value any
+---@param option? f_opt
+---@return boolean status, any kay, any value
+t.find_tblvalue = function (tbl, value, option)
+  local status, tbl_res = t.find_tblval(tbl, value, option)
+  return status, table.unpack(tbl_res)
 end
 
 
@@ -182,6 +194,38 @@ t.tbl_unpack = function (tbl, option)
 
   local arg = t.tbl_exec(tbl, floc, option)
   return table.unpack(arg)
+end
+
+--- Добавлене (замещение) данных в виртуальное окружение
+--- работает, начиная с версии Lua 5.2
+--- @param L table -- таблица с добавляемыми данными в виртуальное окружение
+--- @param keys? table  -- таблица с перечнем (простой список) имен ключей для выборочного добавления данных
+                        -- по умолчанию добавляются все данные из L                     
+--- @param ENV? table   -- таблица виртуального окружения, по умолчанию _ENV
+function t.add_env(L, keys, ENV)
+  assert(type(L) == "table", "The argument of the function must be a table")
+  keys = type(keys) == "table" and keys or {}
+  ENV = type(ENV) == "table" and ENV or _ENV
+  local fins = #keys == 0
+  for k, v in pairs(L) do
+    if not fins then
+      for _, key in ipairs(keys) do
+        if key == k then
+          fins = true
+          break
+        end
+      end
+    end
+    if fins then
+      _ENV[k] = v
+    end
+  end
+end
+
+--- Отдельно взята функция из библиотеки strings от c0sui from github.com
+function t.strtrim(str)
+	str = str:match("^%s*(.-)%s*$")
+	return str
 end
 
 return t
