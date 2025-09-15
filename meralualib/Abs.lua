@@ -6,9 +6,7 @@ local Abs = {}
   реализации абстрактных методов в классах - потомках.
   Данный класс не может иметь экземпляров. При попытке создания экземпляра 
   генериться исключение error 
-
-  Обеспечит 
-]]
+--]]
 
 
 function Abs:checkVirtualMethods(class, attr)
@@ -28,10 +26,10 @@ end
 -- check_instance = Abs:make_check_inst_func(N), где N - допустимое число экземпляров данного класса
 
 function Abs:make_check_inst_func(maxinst)
-  maxinst = maxinst or 1
+  maxinst = maxinst or -1
   local inst = 0
   return function ()
-    if inst >= maxinst then
+    if inst >= maxinst and maxinst >= 0 then --and inst >= maxinst
       return false, inst
     end
     inst = inst + 1
@@ -39,12 +37,14 @@ function Abs:make_check_inst_func(maxinst)
   end
 end
 
+--- TODO доработать класс Abs, добавить опции сохранения instance - saveinst
+--- TODO доработать или удалить опции retinst, retall
 
 ---@param arg {maxinst: integer, retinst: bool, retall: bool}
 ---@return function
 function Abs:alloc_(arg)
   
-  maxinst = arg.maxinst or 1
+  maxinst = arg.maxinst or -1
   retinst = arg.retinst or false
   retall = arg.retall or false
 
@@ -59,7 +59,7 @@ function Abs:alloc_(arg)
     tinst = tinst or {}
     local check_, i_ = check_inst()
     if check_ then
-      inst = inst or tinst
+      inst = inst or {}
       inst[i_] = tinst
       return inst[i_]
     else
@@ -86,7 +86,6 @@ function Abs:new()
     error("Static Class cannot be instantiated")
   end
   o.__index = self
-
   return o
 end
 
