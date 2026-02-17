@@ -65,7 +65,7 @@ do
         local mt = {}
 
         -- Вызов экземпляра.
-        function mt:__call(input, ptl, pth, type)
+        function mt:__call(input, ptl, pth, qmode)
             if input ~= nil then
                 self.input = input
             end
@@ -74,6 +74,9 @@ do
             end
             if pth ~= nil then
                 self.pth = pth
+            end
+            if qmode ~= nil then
+                self.qmode = qmode
             end
 
             private.rtrig:upd(self.input);
@@ -98,10 +101,10 @@ do
                 private.q = false;
             end
 
-            if self.qmode == QMODE.REAL then
-                self.q = private.q and 1 or 0
-            elseif self.qmode == QMODE.BOOL then
+            if self.qmode == QMODE.BOOL then
                 self.q = private.q
+            else
+                self.q = private.q and 1 or 0
             end
 
             return self.q
