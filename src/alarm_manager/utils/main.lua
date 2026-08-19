@@ -41,17 +41,28 @@ local ALARM_APPEARANCE = datatype.Enum:new({
 M.ALARM_APPEARANCE = ALARM_APPEARANCE
 
 
-local _manager_settings = {  -- Настройки менеджера тревог.
-    alarm_appearance = ALARM_APPEARANCE.FLASH,  -- Визуальный способ появления тревоги.
-    create_tags = true,  -- Создать каналы таблиц в СИАМ (каналы количества активных/неквитированных тревог, каналы кнопок квитирования, ...).
-    msg_color = {  -- Цвета тревог.
-        error = 0x00424CEB,  -- Цвет активной тревоги класса "Ошибка" (цвет по умолчанию красный, в формате C++ Hex: 0x00424CEB).
-        warn = 0x00008BFF,  -- Цвет активной тревоги класса "Предупреждение" (цвет по умолчанию оранжевый, в формате C++ Hex: 0x00008BFF).
-        info = 0x0033FEFE,  -- Цвет активной тревоги класса "Информирование" (цвет по умолчанию жёлтый, в формате C++ Hex: 0x0033FEFE).
-        unack = 0x00A6A6A6, -- Цвет неквитированной тревоги (цвет по умолчанию серый, в формате C++ Hex: 0x00A6A6A6)
+---@class AlarmMsgColors
+---@field error number Цвет активной тревоги класса "Ошибка" (по умолчанию красный, формат C++ Hex: 0x00424CEB)
+---@field warn number Цвет активной тревоги класса "Предупреждение" (по умолчанию оранжевый, формат C++ Hex: 0x00008BFF)
+---@field info number Цвет активной тревоги класса "Информирование" (по умолчанию жёлтый, формат C++ Hex: 0x0033FEFE)
+---@field unack number Цвет неквитированной тревоги (по умолчанию серый, формат C++ Hex: 0x00A6A6A6)
+
+---Настройки менеджера тревог.
+---@class ManagerSettings
+---@field alarm_appearance ALARM_APPEARANCE Визуальный способ появления тревоги (по умолчанию: ALARM_APPEARANCE.FLASH)
+---@field create_tags boolean Создать каналы таблиц в СИАМ: количества активных/неквитированных тревог, каналы кнопок квитирования, ... (по умолчанию: true)
+---@field msg_color AlarmMsgColors Цвета тревог
+local _manager_settings = {
+    alarm_appearance = ALARM_APPEARANCE.FLASH,
+    create_tags = true,
+    msg_color = {
+        error = 0x00424CEB,
+        warn  = 0x00008BFF,
+        info  = 0x0033FEFE,
+        unack = 0x00A6A6A6,
     },
 }
-M.manager_settings = _manager_settings  -- Настройки менеджера тревог.
+M.manager_settings = _manager_settings
 
 
 ---@alias LOGIC_VALUE integer
@@ -216,16 +227,16 @@ local alarm_qty = {  -- Список меток для количества ак
     "all_alarm",
 }
 
----@class AlarmManager.AnalogConfig
+---@class AnalogConfig
 ---@field msg_detail boolean? Отображать дополнительную информацию по каналу в сообщении. (по умолчанию: false)
 ---@field display_val boolean? Отображать значение отслеживаемого параметра в сообщении активной тревоги. (по умолчанию: false)
 ---@field get_limit_from_chan boolean? Получать значения пределов из каналов. (по умолчанию: false)
 
----@class AlarmManager.AtableConfig
+---@class AtableConfig
 ---@field table_id integer? Номер таблицы тревог. (по умолчанию: -1)
 ---@field module_name string? Имя системы. (по умолчанию: "")
 ---@field ack_btn boolean? Флаг создания кнопки квитирования. (по умолчанию: false)
----@field analog AlarmManager.AnalogConfig? Настройки для аналоговых тревог.
+---@field analog AnalogConfig? Настройки для аналоговых тревог.
 ---@field display_id_at_msg boolean? Флаг отображения внутреннего ID в сообщении. (по умолчанию: false)
 ---@field display_alarm_state_label boolean? Отображать лейбл состояния тревоги в начале сообщения. (по умолчанию: true)
 ---@field alarm_delay_on number? Время задержки активации тревог, секунды. (по умолчанию: 0)
@@ -259,12 +270,12 @@ local PRIOR_MAX = 1000  -- Низший приоритет тревоги.
 local _DBG_PREF_MSG = "Отладочное сообщение: "
 
 
----@class AlarmManager.AlarmAnalogConfig
+---@class AlarmAnalogConfig
 ---@field msg_detail boolean? Отображать дополнительную информацию по каналу в сообщении при LOGIC.ANALOG. (по умолчанию: false)
 ---@field display_val boolean? Отображать значение отслеживаемого параметра в сообщении активной тревоги при LOGIC.ANALOG. (по умолчанию: false)
 ---@field get_limit_from_chan boolean? Получать значения пределов из каналов при LOGIC.ANALOG. (по умолчанию: false)
 
----@class AlarmManager.AlarmArgs
+---@class AlarmConfig
 ---@field logic LOGIC_VALUE? Способ наблюдения за событием. (по умолчанию: LOGIC.EVENT)
 ---@field class ALARM_CLASS_VALUE? Класс тревоги. (по умолчанию: ALARM_CLASS.ERROR)
 ---@field msg string? Текст тревоги. (по умолчанию: "Пример сообщения. Заполните поле 'msg'")
@@ -284,7 +295,7 @@ local _DBG_PREF_MSG = "Отладочное сообщение: "
 ---@field hyst_high number? Значение гистерезиса для верхнего предела при LOGIC.ANALOG. (по умолчанию: 0)
 ---@field cs_alarm_state CS_ALARM_STATE_VALUE? Состояние тревоги из Кодесис при LOGIC.CS_CLIENT. @see CS_ALARM_STATE (по умолчанию: CS_ALARM_STATE.NORMAL)
 ---@field cs_ack string? Имя канала квитирования тревоги при LOGIC.CS_CLIENT. (по умолчанию: "")
----@field analog AlarmManager.AlarmAnalogConfig? Настройки при LOGIC.ANALOG. (по умолчанию: false)
+---@field analog AlarmAnalogConfig? Настройки при LOGIC.ANALOG. (по умолчанию: false)
 local _alarm = {  -- Структура тревоги.
     logic = LOGIC.EVENT,
     class = ALARM_CLASS.ERROR,
@@ -1622,6 +1633,7 @@ end
 
 local is_channels_created = false  -- Каналы созданы?
 -- Циклическое обновление менеджера тревог.
+---@class upd
 function M:upd()
 
     -- Получить путь до вызывающего скрипта для создания файла __CREATE_NEWTAGS__ рядом с ним.
@@ -1684,19 +1696,23 @@ local function get_next_alarm_id()
     return id
 end
 
+---Таблица тревог.
+---@class Atable
+---@field new fun(self: Atable, config?: AtableConfig): AtableConfig
+---@field alarm fun(config?: AlarmConfig)
 
----@class M.Atable : AlarmManager.AtableConfig
+---@type Atable
 M.Atable = {}  -- Класс Таблица тревог.
 M.Atable.__index = M.Atable
 
 
 --- Создать экземпляр таблицы тревог.
---- @param conf? AlarmManager.AtableConfig Конфигурация таблицы тревог.
---- @return M.Atable tbl_inst Созданный экземпляр таблицы тревог.
+--- @param config? AtableConfig Конфигурация таблицы тревог.
+--- @return AtableConfig tbl_inst Созданный экземпляр таблицы тревог.
 --- @raise string Если конфигурация не валидна или отсутствуют обязательные поля.
----@see _conf Ссылка на таблицу с значениями по умолчанию.
-function M.Atable:new(conf)
-    local public = check_config(conf, _conf)
+--- @see AtableConfig Ссылка на таблицу с значениями по умолчанию.
+function M.Atable:new(config)
+    local public = check_config(config, _conf)
 
     local _private = {
         _alarm_qty_channels = {},
@@ -1721,8 +1737,8 @@ end
 
 
 --- Регистрация тревоги в Менеджере тревог (не пихать в if, иначе можете получить остановку скрипта в рантайме при проверке переданных параметров).
---- @param args AlarmManager.AlarmArgs Структура тревоги с обязательными и опциональными полями.
---- @return AlarmManager.AlarmArgs alarm_inst Созданный экземпляр тревоги.
+--- @param args AlarmConfig Структура тревоги с обязательными и опциональными полями.
+--- @return AlarmConfig alarm_inst Созданный экземпляр тревоги.
 --- @raise string Если отсутствуют обязательные поля (logic, class, msg) или переданы неверные значения перечислителей.
 --- @raise string Если указан недопустимый logic для комбинации других параметров (например, channel при logic = EVENT).
 --- @see LOGIC
