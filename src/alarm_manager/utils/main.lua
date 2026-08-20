@@ -49,7 +49,7 @@ M.ALARM_APPEARANCE = ALARM_APPEARANCE
 
 ---Настройки менеджера тревог.
 ---@class ManagerSettings
----@field alarm_appearance ALARM_APPEARANCE Визуальный способ появления тревоги (по умолчанию: ALARM_APPEARANCE.FLASH)
+---@field alarm_appearance ALARM_APPEARANCE_VALUE Визуальный способ появления тревоги (по умолчанию: ALARM_APPEARANCE.FLASH)
 ---@field create_tags boolean Создать каналы таблиц в СИАМ: количества активных/неквитированных тревог, каналы кнопок квитирования, ... (по умолчанию: true)
 ---@field msg_color AlarmMsgColors Цвета тревог
 local _manager_settings = {
@@ -241,7 +241,6 @@ local alarm_qty = {  -- Список меток для количества ак
 ---@field display_alarm_state_label boolean? Отображать лейбл состояния тревоги в начале сообщения. (по умолчанию: true)
 ---@field alarm_delay_on number? Время задержки активации тревог, секунды. (по умолчанию: 0)
 ---@field alarm_delay_off number? Время задержки деактивации тревог, секунды. (по умолчанию: 0)
----@see _conf Ссылка на таблицу с значениями по умолчанию.
 local _conf = {  -- Конфигурация таблицы тревог.
     table_id = -1,
     module_name = "",
@@ -256,6 +255,7 @@ local _conf = {  -- Конфигурация таблицы тревог.
     alarm_delay_on = 0,
     alarm_delay_off = 0,
 }
+
 local _TABLE_ID_PREFIX = "table_id_"  -- Префикс к индексу таблиц в именах каналов.
 local _MAIN_TABLE_ID = -1  -- Идентификационный номер главной таблицы.
 local _MAIN_TABLE_NAME = "Главная таблица"  -- Комментарий к главной таблице.
@@ -271,31 +271,31 @@ local _DBG_PREF_MSG = "Отладочное сообщение: "
 
 
 ---@class AlarmAnalogConfig
----@field msg_detail boolean? Отображать дополнительную информацию по каналу в сообщении при LOGIC.ANALOG. (по умолчанию: false)
----@field display_val boolean? Отображать значение отслеживаемого параметра в сообщении активной тревоги при LOGIC.ANALOG. (по умолчанию: false)
----@field get_limit_from_chan boolean? Получать значения пределов из каналов при LOGIC.ANALOG. (по умолчанию: false)
+---@field msg_detail boolean? Отображать дополнительную информацию по каналу в сообщении при logic = LOGIC.ANALOG (по умолчанию: false).
+---@field display_val boolean? Отображать значение отслеживаемого параметра в сообщении активной тревоги при logic = LOGIC.ANALOG (по умолчанию: false).
+---@field get_limit_from_chan boolean? Получать значения пределов из каналов при logic = LOGIC.ANALOG (по умолчанию: false).
 
 ---@class AlarmConfig
----@field logic LOGIC_VALUE? Способ наблюдения за событием. (по умолчанию: LOGIC.EVENT)
----@field class ALARM_CLASS_VALUE? Класс тревоги. (по умолчанию: ALARM_CLASS.ERROR)
----@field msg string? Текст тревоги. (по умолчанию: "Пример сообщения. Заполните поле 'msg'")
----@field confirm_method integer? Способ подтверждения события. (по умолчанию: CONFIRM_METHOD.REP_ACK)
----@field prior integer? Приоритет тревоги в пределах одного класса: 1 - наибольший, 1000 - наименьший. (по умолчанию: 100)
----@field delay_on number? Время задержки активации тревоги, секунды. (по умолчанию: 0)
----@field delay_off number? Время задержки деактивации тревоги, секунды. (по умолчанию: 0)
----@field event boolean|number? Состояние события при logic = LOGIC.EVENT. (по умолчанию: false/0)
----@field channel string? Имя канала при logic = LOGIC.DISCRETE|LOGIC.ANALOG|LOGIC.CHANGE. (по умолчанию: "")
----@field limit_type LIMIT_TYPE_VALUE? Тип ограничения при LOGIC.ANALOG. (по умолчанию: LIMIT_TYPE.LOW_HIGH)
----@field low number? Значение нижнего предела при LOGIC.ANALOG. (по умолчанию: 0)
----@field high number? Значение верхнего предела при LOGIC.ANALOG. (по умолчанию: 0)
----@field ch_low string? Имя канала для значения нижнего предела при LOGIC.ANALOG. (по умолчанию: "")
----@field ch_high string? Имя канала для значения верхнего предела при LOGIC.ANALOG. (по умолчанию: "")
----@field discrete_val integer? Значение предела для LOGIC.DISCRETE. (по умолчанию: 0)
----@field hyst_low number? Значение гистерезиса для нижнего предела при LOGIC.ANALOG. (по умолчанию: 0)
----@field hyst_high number? Значение гистерезиса для верхнего предела при LOGIC.ANALOG. (по умолчанию: 0)
----@field cs_alarm_state CS_ALARM_STATE_VALUE? Состояние тревоги из Кодесис при LOGIC.CS_CLIENT. @see CS_ALARM_STATE (по умолчанию: CS_ALARM_STATE.NORMAL)
----@field cs_ack string? Имя канала квитирования тревоги при LOGIC.CS_CLIENT. (по умолчанию: "")
----@field analog AlarmAnalogConfig? Настройки при LOGIC.ANALOG. (по умолчанию: false)
+---@field logic LOGIC_VALUE? Способ наблюдения за событием (по умолчанию: LOGIC.EVENT).
+---@field class ALARM_CLASS_VALUE? Класс тревоги (по умолчанию: ALARM_CLASS.ERROR).
+---@field msg string? Текст тревоги (по умолчанию: "Пример сообщения. Заполните поле 'msg'").
+---@field confirm_method CONFIRM_METHOD_VALUE? Способ подтверждения события (по умолчанию: CONFIRM_METHOD.REP_ACK).
+---@field prior integer? Приоритет тревоги в пределах одного класса: 1 - наибольший, 1000 - наименьший (по умолчанию: 100).
+---@field delay_on number? Время задержки активации тревоги, секунды (по умолчанию: 0).
+---@field delay_off number? Время задержки деактивации тревоги, секунды (по умолчанию: 0).
+---@field event boolean|number? Состояние события при logic = LOGIC.EVENT (по умолчанию: false/0).
+---@field channel string? Имя канала при logic = LOGIC.DISCRETE | LOGIC.ANALOG | LOGIC.CHANGE (по умолчанию: "").
+---@field limit_type LIMIT_TYPE_VALUE? Тип ограничения при logic = LOGIC.ANALOG (по умолчанию: LIMIT_TYPE.LOW_HIGH).
+---@field low number? Значение нижнего предела при logic = LOGIC.ANALOG (по умолчанию: 0).
+---@field high number? Значение верхнего предела при logic = LOGIC.ANALOG (по умолчанию: 0).
+---@field ch_low string? Имя канала для значения нижнего предела при logic = LOGIC.ANALOG (по умолчанию: "").
+---@field ch_high string? Имя канала для значения верхнего предела при logic = LOGIC.ANALOG (по умолчанию: "").
+---@field discrete_val integer? Значение предела при logic = LOGIC.DISCRETE (по умолчанию: 0).
+---@field hyst_low number? Значение гистерезиса для нижнего предела при logic = LOGIC.ANALOG (по умолчанию: 0).
+---@field hyst_high number? Значение гистерезиса для верхнего предела при logic = LOGIC.ANALOG (по умолчанию: 0).
+---@field cs_alarm_state CS_ALARM_STATE_VALUE? Состояние тревоги из Кодесис при logic = LOGIC.CS_CLIENT (по умолчанию: CS_ALARM_STATE.NORMAL).
+---@field cs_ack string? Имя канала квитирования тревоги при LOGIC.CS_CLIENT (по умолчанию: "").
+---@field analog AlarmAnalogConfig? Настройки при logic = LOGIC.ANALOG.
 local _alarm = {  -- Структура тревоги.
     logic = LOGIC.EVENT,
     class = ALARM_CLASS.ERROR,
@@ -1700,11 +1700,13 @@ end
 ---Таблица тревог.
 ---@class Atable
 local Atable = {}
+---@private
 Atable.__index = Atable
 
 
 ---@class AtableInstance : AtableConfig
 local AtableInstance = {}
+---@private
 AtableInstance.__index = AtableInstance
 
 
@@ -1744,7 +1746,7 @@ M.Atable = Atable
 
 --- Регистрация тревоги в Менеджере тревог.
 ---
---- > ⚠️ **Не вызывайте внутри `if`!**
+--- > ⚠️ **Не вызывайте метод внутри `if`!**
 --- > Это может привести к остановке скрипта в рантайме
 --- > при проверке переданных параметров.
 ---
