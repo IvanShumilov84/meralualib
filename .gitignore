@@ -2,3 +2,5 @@
 .vscode/
 # Build artifacts
 build/
+# Тесты
+/test/
