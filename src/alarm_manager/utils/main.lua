@@ -241,7 +241,7 @@ local alarm_qty = {  -- Список меток для количества ак
 ---@field display_alarm_state_label boolean? Отображать лейбл состояния тревоги в начале сообщения. (по умолчанию: true)
 ---@field alarm_delay_on number? Время задержки активации тревог, секунды. (по умолчанию: 0)
 ---@field alarm_delay_off number? Время задержки деактивации тревог, секунды. (по умолчанию: 0)
-local _conf = {  -- Конфигурация таблицы тревог.
+local _table_config = {  -- Конфигурация таблицы тревог.
     table_id = -1,
     module_name = "",
     ack_btn = false,
@@ -296,7 +296,7 @@ local _DBG_PREF_MSG = "Отладочное сообщение: "
 ---@field cs_alarm_state CS_ALARM_STATE_VALUE? Состояние тревоги из Кодесис при logic = LOGIC.CS_CLIENT (по умолчанию: CS_ALARM_STATE.NORMAL).
 ---@field cs_ack string? Имя канала квитирования тревоги при LOGIC.CS_CLIENT (по умолчанию: "").
 ---@field analog AlarmAnalogConfig? Настройки при logic = LOGIC.ANALOG.
-local _alarm = {  -- Структура тревоги.
+local _alarm_config = {  -- Структура тревоги.
     logic = LOGIC.EVENT,
     class = ALARM_CLASS.ERROR,
     msg = "Пример сообщения. Заполните поле 'msg'",
@@ -317,9 +317,9 @@ local _alarm = {  -- Структура тревоги.
     cs_alarm_state = CS_ALARM_STATE.NORMAL,
     cs_ack = "",
     analog = {
-        msg_detail = _conf.analog.msg_detail,
-        display_val = _conf.analog.display_val,
-        get_limit_from_chan = _conf.analog.get_limit_from_chan,
+        msg_detail = _table_config.analog.msg_detail,
+        display_val = _table_config.analog.display_val,
+        get_limit_from_chan = _table_config.analog.get_limit_from_chan,
     },
 }
 local is_ack = {}  -- Массив флагов квитирования тревог.
@@ -1430,7 +1430,7 @@ local function manager_update(alarm_list)
     -- Валидация параметров тревоги на правильно переданный тип (при отсутствии параметра присваивается значение по умолчанию).
     for id, alarm in ipairs(alarm_list) do
         assert(type(alarm) == "table", "Parameter 'alarm': expected 'table', got '"  .. type(alarm)  .. "'. ")
-        _alarm_list[id].conf = check_config(alarm.conf, _alarm)
+        _alarm_list[id].conf = check_config(alarm.conf, _alarm_config)
     end
 
     -- Получаем список всех каналов СИАМ.
@@ -1535,7 +1535,7 @@ end
 -- Проверить конфигурации таблиц.
 local function check_tables_conf()
     for _, tbl in ipairs(_tables) do
-        tbl.conf = check_config(tbl.conf, _conf)
+        tbl.conf = check_config(tbl.conf, _table_config)
     end
 
 end
@@ -1711,7 +1711,7 @@ AtableInstance.__index = AtableInstance
 --- @raise string Если конфигурация не валидна.
 --- @see AtableConfig Ссылка на таблицу с значениями по умолчанию.
 function Atable:new(config)
-    local public = check_config(config, _conf)
+    local public = check_config(config, _table_config)
 
     local _private = {
         _alarm_qty_channels = {},
@@ -1756,7 +1756,7 @@ M.Atable = Atable
 --- @see CS_ALARM_STATE
 function AtableInstance:alarm(config)
 
-    local public = config or _alarm
+    local public = config or _alarm_config
 
     local _private = {
         tbl = self,
