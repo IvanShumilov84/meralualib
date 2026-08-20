@@ -19,6 +19,18 @@ local tags = require(lib_path .. "tags")
 local timers = require(lib_path .. "timers")
 
 
+---@class AlarmManager
+---@field manager_settings ManagerSettings
+---@field ALARM_APPEARANCE ALARM_APPEARANCE
+---@field LOGIC LOGIC
+---@field LIMIT_TYPE LIMIT_TYPE
+---@field CS_ALARM_STATE CS_ALARM_STATE
+---@field ALARM_CLASS ALARM_CLASS
+---@field CONFIRM_METHOD CONFIRM_METHOD
+---@field Atable Atable
+---@field upd fun(self: AlarmManager): nil Циклическое обновление менеджера тревог.
+
+
 local M = {}
 local MODULE_NAME = "alarm_manager"
 local MODULE_COMMENT = "Менеджер тревог"
@@ -1627,7 +1639,6 @@ end
 
 local is_channels_created = false  -- Каналы созданы?
 -- Циклическое обновление менеджера тревог.
----@class upd
 function M:upd()
 
     -- Получить путь до вызывающего скрипта для создания файла __CREATE_NEWTAGS__ рядом с ним.
