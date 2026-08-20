@@ -18,4 +18,15 @@ if lib_logs then
     luacpLogMessage(lib_category_name, msg, 1)
 end
 
-return require(module_path)
+---@class AlarmManager
+---@field manager_settings ManagerSettings
+---@field ALARM_APPEARANCE ALARM_APPEARANCE
+---@field LOGIC LOGIC
+---@field LIMIT_TYPE LIMIT_TYPE
+---@field CS_ALARM_STATE CS_ALARM_STATE
+---@field ALARM_CLASS ALARM_CLASS
+---@field CONFIRM_METHOD CONFIRM_METHOD
+---@field Atable Atable
+---@field upd upd
+local M = require(module_path)
+return M
