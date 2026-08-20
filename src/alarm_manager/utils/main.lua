@@ -1700,29 +1700,21 @@ end
 ---Таблица тревог.
 ---@class Atable
 local Atable = {}
-
-
---- Создать экземпляр таблицы тревог.
---- @param self Atable
---- @param config? AtableConfig Конфигурация таблицы тревог.
---- @return AtableInstance tbl_inst Созданный экземпляр таблицы тревог.
-function Atable:new(config) end
+Atable.__index = Atable
 
 
 ---@class AtableInstance : AtableConfig
 local AtableInstance = {}
 AtableInstance.__index = AtableInstance
 
-M.Atable = Atable  -- Класс Таблица тревог.
-M.Atable.__index = M.Atable
-
 
 --- Создать экземпляр таблицы тревог.
+--- @param self Atable
 --- @param config? AtableConfig Конфигурация таблицы тревог.
 --- @return AtableInstance tbl_inst Созданный экземпляр таблицы тревог.
---- @raise string Если конфигурация не валидна или отсутствуют обязательные поля.
+--- @raise string Если конфигурация не валидна.
 --- @see AtableConfig Ссылка на таблицу с значениями по умолчанию.
-function M.Atable:new(config)
+function Atable:new(config)
     local public = check_config(config, _conf)
 
     local _private = {
@@ -1747,25 +1739,32 @@ function M.Atable:new(config)
 end
 
 
---- Регистрация тревоги в Менеджере тревог (не пихать в if, иначе можете получить остановку скрипта в рантайме при проверке переданных параметров).
+M.Atable = Atable
+
+
+--- Регистрация тревоги в Менеджере тревог.
+---
+--- > ⚠️ **Не вызывайте внутри `if`!**
+--- > Это может привести к остановке скрипта в рантайме
+--- > при проверке переданных параметров.
+---
 --- @param self AtableInstance
---- @param args AlarmConfig Структура тревоги с обязательными и опциональными полями.
+--- @param config? AlarmConfig Настройки тревоги.
 --- @return AlarmConfig alarm_inst Созданный экземпляр тревоги.
---- @raise string Если отсутствуют обязательные поля (logic, class, msg) или переданы неверные значения перечислителей.
---- @raise string Если указан недопустимый logic для комбинации других параметров (например, channel при logic = EVENT).
+--- @raise string Если переданы несуществующие ключи.
+--- @raise string Если переданы неверные типы значений.
 --- @see AlarmConfig
 --- @see LOGIC
 --- @see ALARM_CLASS
 --- @see LIMIT_TYPE
 --- @see CS_ALARM_STATE
-function AtableInstance:alarm(args)
+function AtableInstance:alarm(config)
 
-    local public = args
+    local public = config
 
     local _private = {
         tbl = self,
         internal_id = get_next_alarm_id(),
-        -- is_ack = false,
     }
 
     if not ton[_private.internal_id] then
