@@ -1696,19 +1696,43 @@ local function get_next_alarm_id()
     return id
 end
 
+
 ---Таблица тревог.
 ---@class Atable
----@field new fun(self: Atable, config?: AtableConfig): AtableConfig
----@field alarm fun(config?: AlarmConfig)
+local Atable = {}
 
----@type Atable
-M.Atable = {}  -- Класс Таблица тревог.
+
+--- Создать экземпляр таблицы тревог.
+--- @param self Atable
+--- @param config? AtableConfig Конфигурация таблицы тревог.
+--- @return AtableInstance tbl_inst Созданный экземпляр таблицы тревог.
+function Atable:new(config) end
+
+
+---@class AtableInstance : AtableConfig
+local AtableInstance = {}
+AtableInstance.__index = AtableInstance
+
+M.Atable = Atable  -- Класс Таблица тревог.
 M.Atable.__index = M.Atable
+
+
+-- --- Регистрация тревоги в Менеджере тревог (не пихать в if, иначе можете получить остановку скрипта в рантайме при проверке переданных параметров).
+-- --- @param self AtableInstance
+-- --- @param args AlarmConfig Структура тревоги с обязательными и опциональными полями.
+-- --- @return AlarmConfig alarm_inst Созданный экземпляр тревоги.
+-- --- @raise string Если отсутствуют обязательные поля (logic, class, msg) или переданы неверные значения перечислителей.
+-- --- @raise string Если указан недопустимый logic для комбинации других параметров (например, channel при logic = EVENT).
+-- --- @see LOGIC
+-- --- @see ALARM_CLASS
+-- --- @see LIMIT_TYPE
+-- --- @see CS_ALARM_STATE
+-- function AtableInstance:alarm(args) end
 
 
 --- Создать экземпляр таблицы тревог.
 --- @param config? AtableConfig Конфигурация таблицы тревог.
---- @return AtableConfig tbl_inst Созданный экземпляр таблицы тревог.
+--- @return AtableInstance tbl_inst Созданный экземпляр таблицы тревог.
 --- @raise string Если конфигурация не валидна или отсутствуют обязательные поля.
 --- @see AtableConfig Ссылка на таблицу с значениями по умолчанию.
 function M.Atable:new(config)
@@ -1724,7 +1748,7 @@ function M.Atable:new(config)
 
     local clk_upd = timers["Ton"]:new()
 
-    setmetatable(public, self)
+    setmetatable(public, AtableInstance)
 
     _private.conf = public
 
@@ -1737,15 +1761,17 @@ end
 
 
 --- Регистрация тревоги в Менеджере тревог (не пихать в if, иначе можете получить остановку скрипта в рантайме при проверке переданных параметров).
+--- @param self AtableInstance
 --- @param args AlarmConfig Структура тревоги с обязательными и опциональными полями.
 --- @return AlarmConfig alarm_inst Созданный экземпляр тревоги.
 --- @raise string Если отсутствуют обязательные поля (logic, class, msg) или переданы неверные значения перечислителей.
 --- @raise string Если указан недопустимый logic для комбинации других параметров (например, channel при logic = EVENT).
+--- @see AlarmConfig
 --- @see LOGIC
 --- @see ALARM_CLASS
 --- @see LIMIT_TYPE
 --- @see CS_ALARM_STATE
-function M.Atable:alarm(args)
+function AtableInstance:alarm(args)
 
     local public = args
 
