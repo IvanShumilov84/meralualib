@@ -1612,12 +1612,6 @@ local function register_pending_tables()
     for _, tbl in ipairs(_pending_tables) do
         local table_id = tbl.conf.table_id
 
-        -- Проверка: table_id должен быть установлен явно.
-        assert(table_id ~= -1,
-            string.format(
-                "AlarmManager: 'table_id' is not set for a table (still default -1). " ..
-                "Set 'table_id' before calling am:upd()."))
-
         if not _unique_tables[table_id] then
             _unique_tables[table_id] = tbl
             table.insert(_tables, tbl)
