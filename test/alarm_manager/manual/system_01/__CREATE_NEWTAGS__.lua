@@ -1,0 +1,26 @@
+--Скрипт создан автоматически, не изменять вручную
+function lua_main() end
+-- setValue("alarm_manager.table_id_1.alarm_qty.error") -- Менеджер тревог: таблица №1, канал количества активных тревог класса 'error' [модуль ''].
+-- setValue("alarm_manager.table_id_1.alarm_qty.warn") -- Менеджер тревог: таблица №1, канал количества активных тревог класса 'warn' [модуль ''].
+-- setValue("alarm_manager.table_id_1.alarm_qty.info") -- Менеджер тревог: таблица №1, канал количества активных тревог класса 'info' [модуль ''].
+-- setValue("alarm_manager.table_id_1.alarm_qty.all_alarm") -- Менеджер тревог: таблица №1, канал количества активных тревог класса 'all_alarm' [модуль ''].
+-- setValue("alarm_manager.table_id_1.unack_qty.error") -- Менеджер тревог: таблица №1, канал количества неквитированных тревог класса 'error' [модуль ''].
+-- setValue("alarm_manager.table_id_1.unack_qty.warn") -- Менеджер тревог: таблица №1, канал количества неквитированных тревог класса 'warn' [модуль ''].
+-- setValue("alarm_manager.table_id_1.unack_qty.info") -- Менеджер тревог: таблица №1, канал количества неквитированных тревог класса 'info' [модуль ''].
+-- setValue("alarm_manager.table_id_1.unack_qty.all_alarm") -- Менеджер тревог: таблица №1, канал количества неквитированных тревог класса 'all_alarm' [модуль ''].
+-- setValue("alarm_manager.table_id_2.alarm_qty.error") -- Менеджер тревог: таблица №2, канал количества активных тревог класса 'error' [модуль ''].
+-- setValue("alarm_manager.table_id_2.alarm_qty.warn") -- Менеджер тревог: таблица №2, канал количества активных тревог класса 'warn' [модуль ''].
+-- setValue("alarm_manager.table_id_2.alarm_qty.info") -- Менеджер тревог: таблица №2, канал количества активных тревог класса 'info' [модуль ''].
+-- setValue("alarm_manager.table_id_2.alarm_qty.all_alarm") -- Менеджер тревог: таблица №2, канал количества активных тревог класса 'all_alarm' [модуль ''].
+-- setValue("alarm_manager.table_id_2.unack_qty.error") -- Менеджер тревог: таблица №2, канал количества неквитированных тревог класса 'error' [модуль ''].
+-- setValue("alarm_manager.table_id_2.unack_qty.warn") -- Менеджер тревог: таблица №2, канал количества неквитированных тревог класса 'warn' [модуль ''].
+-- setValue("alarm_manager.table_id_2.unack_qty.info") -- Менеджер тревог: таблица №2, канал количества неквитированных тревог класса 'info' [модуль ''].
+-- setValue("alarm_manager.table_id_2.unack_qty.all_alarm") -- Менеджер тревог: таблица №2, канал количества неквитированных тревог класса 'all_alarm' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.alarm_qty.error") -- Менеджер тревог: таблица №-1, канал количества активных тревог класса 'error' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.alarm_qty.warn") -- Менеджер тревог: таблица №-1, канал количества активных тревог класса 'warn' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.alarm_qty.info") -- Менеджер тревог: таблица №-1, канал количества активных тревог класса 'info' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.alarm_qty.all_alarm") -- Менеджер тревог: таблица №-1, канал количества активных тревог класса 'all_alarm' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.unack_qty.error") -- Менеджер тревог: таблица №-1, канал количества неквитированных тревог класса 'error' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.unack_qty.warn") -- Менеджер тревог: таблица №-1, канал количества неквитированных тревог класса 'warn' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.unack_qty.info") -- Менеджер тревог: таблица №-1, канал количества неквитированных тревог класса 'info' [модуль ''].
+-- setValue("alarm_manager.table_id_-1.unack_qty.all_alarm") -- Менеджер тревог: таблица №-1, канал количества неквитированных тревог класса 'all_alarm' [модуль ''].
