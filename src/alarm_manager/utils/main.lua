@@ -1717,19 +1717,6 @@ M.Atable = Atable  -- Класс Таблица тревог.
 M.Atable.__index = M.Atable
 
 
--- --- Регистрация тревоги в Менеджере тревог (не пихать в if, иначе можете получить остановку скрипта в рантайме при проверке переданных параметров).
--- --- @param self AtableInstance
--- --- @param args AlarmConfig Структура тревоги с обязательными и опциональными полями.
--- --- @return AlarmConfig alarm_inst Созданный экземпляр тревоги.
--- --- @raise string Если отсутствуют обязательные поля (logic, class, msg) или переданы неверные значения перечислителей.
--- --- @raise string Если указан недопустимый logic для комбинации других параметров (например, channel при logic = EVENT).
--- --- @see LOGIC
--- --- @see ALARM_CLASS
--- --- @see LIMIT_TYPE
--- --- @see CS_ALARM_STATE
--- function AtableInstance:alarm(args) end
-
-
 --- Создать экземпляр таблицы тревог.
 --- @param config? AtableConfig Конфигурация таблицы тревог.
 --- @return AtableInstance tbl_inst Созданный экземпляр таблицы тревог.
