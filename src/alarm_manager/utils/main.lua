@@ -1756,7 +1756,7 @@ M.Atable = Atable
 --- @see CS_ALARM_STATE
 function AtableInstance:alarm(config)
 
-    local public = config
+    local public = config or _alarm
 
     local _private = {
         tbl = self,
