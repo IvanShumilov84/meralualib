@@ -31,9 +31,11 @@ c:\Program Files (x86)\Mera\SIAM\meralualib\v1_0_0
 
     "Lua.diagnostics.enable": true,
     "Lua.completion.enable": true,
+    "Lua.completion.workspaceWord": false,
     "Lua.completion.showWord": "Enable",
-    "Lua.completion.callSnippet": "Both",
-    "Lua.completion.keywordSnippet": "Disable",
+    "Lua.completion.callSnippet": "Replace",
+    "Lua.completion.showParams": true,
+    "Lua.completion.keywordSnippet": "Both",
 
 }
 ```
