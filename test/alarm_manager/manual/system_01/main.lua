@@ -33,9 +33,7 @@ function lua_main()
 
     -- Скрипт 1 Таблица 1.
     -- Метод квитирования REP_ACK.
-    local alarm = atable:alarm{
-        -- delay_on = 1
-    }
+    local alarm = atable:alarm()
     alarm.logic = am.LOGIC.EVENT
     alarm.class = am.ALARM_CLASS.ERROR
     alarm.msg = "am_script_01_table_01_error_rep_ack_01. Авария"
@@ -48,18 +46,18 @@ function lua_main()
     end
 
     local setpoint = 1
-    alarm = atable:alarm{}
+    alarm = atable:alarm()
     alarm.logic = am.LOGIC.EVENT
     alarm.class = am.ALARM_CLASS.ERROR
     alarm.confirm_method = am.CONFIRM_METHOD.REP_ACK
-    alarm.prior = 2
+    alarm.prior = 3
     alarm.delay_on = 1
     -- alarm.delay_off = 1
     alarm.msg =
         "Авария: " ..
         "am_sine_signal > " .. setpoint .. ". " ..
-        "Задержка активации: " .. alarm.delay_on .. ". "
-        -- "Задержка деактивации: " .. alarm.delay_off
+        "Задержка активации: " .. alarm.delay_on .. ". " ..
+        "Задержка деактивации: " .. alarm.delay_off
     alarm.event = getValue("am_sine_signal") > 1
 
     alarm = atable:alarm{}
@@ -68,6 +66,7 @@ function lua_main()
     alarm.class = am.ALARM_CLASS.ERROR
     alarm.msg = "am_script_01_table_01_error_rep_ack_02. Авария"
     alarm.confirm_method = am.CONFIRM_METHOD.REP_ACK
+    alarm.prior = 2
     if getValue("am_script_01_table_01_error_rep_ack_02") > 0 then
         alarm.event = true
     end
