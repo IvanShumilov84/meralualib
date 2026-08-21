@@ -2,3 +2,5 @@
 .vscode/
 # Build artifacts
 build/
+# Tests
+*__CREATE_NEWTAGS__*.lua
