@@ -26,7 +26,7 @@
 ## Минимальный пример
 
 ```lua
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 -- Создаём таблицу тревог
 local atable = am.Atable:new()
@@ -285,7 +285,7 @@ atable:alarm{
 ### Несколько таблиц тревог в одном скрипте:
 
 ```lua
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 local atable1 = am.Atable:new{
     table_id = 1,
@@ -320,7 +320,7 @@ end
 
 ```lua
 -- скрипт 1
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 local atable = am.Atable:new{
     table_id = 1,
@@ -341,7 +341,7 @@ end
 
 ```lua
 -- скрипт 2
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 local atable = am.Atable:new{
     table_id = 2,
@@ -364,7 +364,7 @@ end
 
 ```lua
 -- скрипт 1
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 local atable = am.Atable:new{
     table_id = 1,
@@ -385,7 +385,7 @@ end
 
 ```lua
 -- скрипт 2
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 local atable = am.Atable:new{
     table_id = 1,

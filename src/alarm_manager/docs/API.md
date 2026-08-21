@@ -20,11 +20,7 @@
 ## 🔌Подключение модуля
 
 ```lua
-local am = require("meralualib.alarm_manager")  -- Последняя версия.
-```
-или
-```lua
-local am = require("meralualib.alarm_manager.v2")  -- Конкретная версия (рекомендуется).
+local am = require("meralualib.v1_0_0.alarm_manager")
 ```
 
 
@@ -122,7 +118,7 @@ am.manager_settings.msg_color.error = 0x000000FF  -- красный
 
 Класс таблицы тревог. Наследует все поля конфигурации `AlarmManager.AtableConfig` и добавляет методы управления.
 
-### `am.Atable:new(conf?)` → `M.Atable`
+### `am.Atable:new(config?)` → `M.Atable`
 
 Создаёт экземпляр таблицы тревог.
 
@@ -130,7 +126,7 @@ am.manager_settings.msg_color.error = 0x000000FF  -- красный
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
-| `conf` | `AlarmManager.AtableConfig` | Нет | Конфигурация таблицы (по умолчанию из `_conf`) |
+| `config` | `AlarmManager.AtableConfig` | Нет | Конфигурация таблицы (по умолчанию из `_table_config`) |
 
 **Возвращает:** экземпляр `M.Atable`.
 
@@ -146,7 +142,7 @@ local atable = am.Atable:new{
 }
 ```
 
-### `atable:alarm(args)` → `AlarmManager.AlarmArgs`
+### `atable:alarm(config)` → `AlarmConfig`
 
 Регистрирует тревогу в таблице.
 
@@ -154,7 +150,7 @@ local atable = am.Atable:new{
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
-| `args` | `AlarmManager.AlarmArgs` | Нет | Структура тревоги |
+| `config` | `AlarmConfig` | Нет | Структура тревоги |
 
 **Возвращает:** `AlarmManager.AlarmArgs` — ссылку на созданную тревогу (для последующего изменения полей).
 
@@ -221,17 +217,17 @@ end
 
 ## Конфигурационные классы
 
-### `AlarmManager.AtableConfig` — конфигурация таблицы
+### `AtableConfig` — конфигурация таблицы
 
 | Поле | Тип | По умолчанию | Описание |
 |------|-----|--------------|----------|
 | `table_id` | `integer` | `-1` | Номер таблицы в СИАМ |
 | `module_name` | `string` | `""` | Имя системы для комментариев каналов |
-| `analog` | `AlarmManager.AnalogConfig` | — | Настройки для аналоговых тревог |
+| `analog` | `AnalogConfig` | — | Настройки для аналоговых тревог |
 | `display_id_at_msg` | `boolean` | `false` | Показывать `[idN]` в начале сообщения |
 | `display_alarm_state_label` | `boolean` | `true` | Показывать лейбл состояния (`[Активна]`, `[Неактивна]` и т.д.) |
 
-### `AlarmManager.AnalogConfig` — настройки аналоговых тревог на уровне таблицы
+### `AnalogConfig` — настройки аналоговых тревог на уровне таблицы
 
 | Поле | Тип | По умолчанию | Описание |
 |------|-----|--------------|----------|
@@ -239,7 +235,7 @@ end
 | `display_val` | `boolean` | `false` | Показывать текущее значение параметра |
 | `get_limit_from_chan` | `boolean` | `false` | Брать уставки из каналов `ch_low`/`ch_high` |
 
-### `AlarmManager.AlarmArgs` — конфигурация тревоги
+### `AlarmConfig` — конфигурация тревоги
 
 | Поле | Тип | По умолчанию | Описание |
 |------|-----|--------------|----------|
@@ -262,9 +258,9 @@ end
 | `hyst_high` | `number` | `0` | Гистерезис верхнего предела (≥ 0) |
 | `cs_alarm_state` | `CS_ALARM_STATE_VALUE` | `CS_ALARM_STATE.NORMAL` | Состояние из Кодесис при `LOGIC.CS_CLIENT` |
 | `cs_ack` | `string` | `""` | Канал квитирования при `LOGIC.CS_CLIENT` |
-| `analog` | `AlarmManager.AlarmAnalogConfig` | — | Переопределение настроек аналоговой тревоги |
+| `analog` | `AlarmAnalogConfig` | — | Переопределение настроек аналоговой тревоги |
 
-### `AlarmManager.AlarmAnalogConfig` — настройки аналоговой тревоги (переопределение)
+### `AlarmAnalogConfig` — настройки аналоговой тревоги (переопределение)
 
 | Поле | Тип | По умолчанию | Описание |
 |------|-----|--------------|----------|
