@@ -19,6 +19,7 @@ local tags = require(lib_path .. "tags")
 local timers = require(lib_path .. "timers")
 
 
+---Менеджер тревог.
 ---@class AlarmManager
 ---@field manager_settings ManagerSettings
 ---@field ALARM_APPEARANCE ALARM_APPEARANCE
@@ -54,16 +55,16 @@ M.ALARM_APPEARANCE = ALARM_APPEARANCE
 
 
 ---@class AlarmMsgColors
----@field error number Цвет активной тревоги класса "Ошибка" (по умолчанию красный, формат C++ Hex: 0x00424CEB)
----@field warn number Цвет активной тревоги класса "Предупреждение" (по умолчанию оранжевый, формат C++ Hex: 0x00008BFF)
----@field info number Цвет активной тревоги класса "Информирование" (по умолчанию жёлтый, формат C++ Hex: 0x0033FEFE)
----@field unack number Цвет неквитированной тревоги (по умолчанию серый, формат C++ Hex: 0x00A6A6A6)
+---@field error number Цвет активной тревоги класса "Ошибка" (по умолчанию красный, формат C++ Hex: 0x00424CEB).
+---@field warn number Цвет активной тревоги класса "Предупреждение" (по умолчанию оранжевый, формат C++ Hex: 0x00008BFF).
+---@field info number Цвет активной тревоги класса "Информирование" (по умолчанию жёлтый, формат C++ Hex: 0x0033FEFE).
+---@field unack number Цвет неквитированной тревоги (по умолчанию серый, формат C++ Hex: 0x00A6A6A6).
 
 ---Настройки менеджера тревог.
 ---@class ManagerSettings
----@field alarm_appearance ALARM_APPEARANCE_VALUE Визуальный способ появления тревоги (по умолчанию: ALARM_APPEARANCE.FLASH)
----@field create_tags boolean Создать каналы таблиц в СИАМ: количества активных/неквитированных тревог, каналы кнопок квитирования, ... (по умолчанию: true)
----@field msg_color AlarmMsgColors Цвета тревог
+---@field alarm_appearance ALARM_APPEARANCE_VALUE Визуальный способ появления тревоги (по умолчанию: ALARM_APPEARANCE.FLASH).
+---@field create_tags boolean Создать каналы таблиц в СИАМ: количества активных/неквитированных тревог, каналы кнопок квитирования, ... (по умолчанию: true).
+---@field msg_color AlarmMsgColors Цвета тревог.
 local _manager_settings = {
     alarm_appearance = ALARM_APPEARANCE.FLASH,
     create_tags = true,
@@ -196,11 +197,11 @@ end
 
 ---Перечислитель способа подтверждения тревоги.
 ---@class CONFIRM_METHOD
----@field ACK CONFIRM_METHOD_VALUE (не использовать, в разработке) Квитирование тревоги.
+---@field ACK CONFIRM_METHOD_VALUE (⚠️**не использовать, в разработке**) Квитирование тревоги.
 ---@field REP CONFIRM_METHOD_VALUE Деактивация тревоги.
----@field ACK_REP CONFIRM_METHOD_VALUE (не использовать, в разработке) подтверждение деактивированной или деактивация квитированной тревоги.
+---@field ACK_REP CONFIRM_METHOD_VALUE (⚠️**не использовать, в разработке**) подтверждение деактивированной или деактивация квитированной тревоги.
 ---@field REP_ACK CONFIRM_METHOD_VALUE Подтверждение деактивированной тревоги.
----@field ACK_REP_ACK CONFIRM_METHOD_VALUE (не использовать, в разработке) Подтверждение деактивированной тревоги, причем перед деактивацией тревога опционально могла быть сквитирована.
+---@field ACK_REP_ACK CONFIRM_METHOD_VALUE (⚠️**не использовать, в разработке**) Подтверждение деактивированной тревоги, причем перед деактивацией тревога опционально могла быть сквитирована.
 local CONFIRM_METHOD = datatype.Enum:new({
     ACK = 0,
     REP = 1,
@@ -239,21 +240,23 @@ local alarm_qty = {  -- Список меток для количества ак
     "all_alarm",
 }
 
+---Конфигурация аналоговых тревог.
 ---@class AnalogConfig
----@field msg_detail boolean? Отображать дополнительную информацию по каналу в сообщении. (по умолчанию: false)
----@field display_val boolean? Отображать значение отслеживаемого параметра в сообщении активной тревоги. (по умолчанию: false)
----@field get_limit_from_chan boolean? Получать значения пределов из каналов. (по умолчанию: false)
+---@field msg_detail boolean? Отображать дополнительную информацию по каналу в сообщении (по умолчанию: false).
+---@field display_val boolean? Отображать значение отслеживаемого параметра в сообщении активной тревоги (по умолчанию: false).
+---@field get_limit_from_chan boolean? Получать значения пределов из каналов (по умолчанию: false).
 
+-- Конфигурация таблицы тревог.
 ---@class AtableConfig
----@field table_id integer? Номер таблицы тревог. (по умолчанию: -1)
----@field module_name string? Имя системы. (по умолчанию: "")
----@field ack_btn boolean? Флаг создания кнопки квитирования. (по умолчанию: false)
+---@field table_id integer? Номер таблицы тревог (по умолчанию: -1).
+---@field module_name string? Имя системы (по умолчанию: "").
+---@field ack_btn boolean? Флаг создания кнопки квитирования (по умолчанию: false).
 ---@field analog AnalogConfig? Настройки для аналоговых тревог.
----@field display_id_at_msg boolean? Флаг отображения внутреннего ID в сообщении. (по умолчанию: false)
----@field display_alarm_state_label boolean? Отображать лейбл состояния тревоги в начале сообщения. (по умолчанию: true)
----@field alarm_delay_on number? Время задержки активации тревог, секунды. (по умолчанию: 0)
----@field alarm_delay_off number? Время задержки деактивации тревог, секунды. (по умолчанию: 0)
-local _table_config = {  -- Конфигурация таблицы тревог.
+---@field display_id_at_msg boolean? Флаг отображения внутреннего ID в сообщении (по умолчанию: false).
+---@field display_alarm_state_label boolean? Отображать лейбл состояния тревоги в начале сообщения (по умолчанию: true).
+---@field alarm_delay_on number? Время задержки активации тревог, секунды (по умолчанию: 0).
+---@field alarm_delay_off number? Время задержки деактивации тревог, секунды (по умолчанию: 0).
+local _table_config = {
     table_id = -1,
     module_name = "",
     ack_btn = false,
