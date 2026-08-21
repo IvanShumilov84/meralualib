@@ -16,7 +16,7 @@
 ## 🚀 Быстрый старт
 
 ```lua
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 
 -- Создаём таблицу тревог
 local atable = am.Atable:new()
@@ -47,7 +47,7 @@ end
 
 Модуль подключается через `require`:
 ```lua
-local am = require("meralualib.alarm_manager")
+local am = require("meralualib.v1_0_0.alarm_manager")
 ```
 
 ## 📖 API
